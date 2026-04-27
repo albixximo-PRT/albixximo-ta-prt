@@ -67,7 +67,7 @@ async function callOcrSpace(apiKey: string, jpegBuffer: Buffer, engine: "1" | "2
       fd.append("OCREngine", engine)
       fd.append("scale", "false")
       fd.append("isTable", "false")
-      fd.append("file", new Blob([jpegBuffer], { type: "image/jpeg" }), "gt7.jpg")
+      fd.append("file", new Blob([new Uint8Array(jpegBuffer)], { type: "image/jpeg" }), "gt7.jpg")
 
       const res = await fetchWithTimeout(
         endpoint,
