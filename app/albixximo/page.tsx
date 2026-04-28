@@ -3321,7 +3321,7 @@ const [championshipState, setChampionshipState] = useState<ChampionshipState>({
   races: {},
   roundMovements: {},
 })
-const [drawerOpen, setDrawerOpen] = useState(true)
+const [drawerOpen, setDrawerOpen] = useState(false)
 const [driverBaselines, setDriverBaselines] = useState<DriverBaselineEntry[]>([])
 const [manualRace12Draft, setManualRace12Draft] = useState<
   Record<string, { g1: string; g2: string }>
@@ -5798,6 +5798,15 @@ function ChampionshipTableBlock({
               <th
                 style={{
                   ...(exporting ? s.thBaseExport : s.thBase),
+                  ...s.col.totale,
+                }}
+              >
+                Punti
+              </th>
+
+              <th
+                style={{
+                  ...(exporting ? s.thBaseExport : s.thBase),
                   ...s.col.gara,
                   paddingTop: exporting ? 10 : 8,
                   paddingBottom: exporting ? 10 : 8,
@@ -5833,15 +5842,6 @@ function ChampionshipTableBlock({
                   </th>
                 )
               })}
-
-              <th
-                style={{
-                  ...(exporting ? s.thBaseExport : s.thBase),
-                  ...s.col.totale,
-                }}
-              >
-                Tot
-              </th>
             </tr>
           </thead>
 
@@ -5945,6 +5945,34 @@ function ChampionshipTableBlock({
                   <TableCell
                     align="center"
                     style={{
+  ...s.col.totale,
+  ...(exporting ? s.totalCellExport : s.totalCell),
+  fontWeight: exporting ? 800 : 700,
+  fontSize: exporting ? 16 : 16,
+  position: "relative",
+}}
+                  >
+                    {driver.totalPoints}
+                    <div
+  style={{
+    position: "absolute",
+    top: "-6%",
+    right: 0,
+    width: 2,
+    height: "112%",
+    borderRadius: 2,
+    background:
+      "linear-gradient(180deg, rgba(255,215,0,0), rgba(255,215,0,0.9), rgba(255,215,0,0))",
+    boxShadow:
+      "0 0 10px rgba(255,215,0,0.6), 0 0 18px rgba(255,215,0,0.3)",
+    pointerEvents: "none",
+  }}
+/>
+                  </TableCell>
+
+                  <TableCell
+                    align="center"
+                    style={{
                       ...(exporting ? s.garaCellExport : s.garaCell),
                     }}
                   >
@@ -5987,17 +6015,6 @@ function ChampionshipTableBlock({
                       </TableCell>
                     )
                   })}
-
-                  <TableCell
-                    align="center"
-                    style={{
-                      ...s.col.totale,
-                      ...(exporting ? s.totalCellExport : s.totalCell),
-                      fontWeight: exporting ? 800 : 700,
-                    }}
-                  >
-                    {driver.totalPoints}
-                  </TableCell>
                 </tr>
               )
             })}
@@ -7439,17 +7456,40 @@ for (const driver of map.values()) {
   const g2Points = driver.racePoints[2] ?? 0
   const g3Points = driver.racePoints[3] ?? 0
 
-  const activeMovement = activeRoundMovementByDriver.get(driverKey) || null
+  const activeMovement = (() => {
+  if (currentRace < 3) return null
 
-  if (currentRace === 3 && activeMovement) {
-    const movementType = activeMovement.type
-    const multiplier = movementType === "promote" ? 0.6 : 1.5
+  const round3Movements = championshipState.roundMovements?.[3] || {}
 
-    const recalculatedG2 = Math.ceil(g2Points * multiplier)
-    const recalculatedG3 = Math.ceil(g3Points * multiplier)
+  for (const league of CHAMPIONSHIP_LEAGUES) {
+    const entries = round3Movements[league] || []
 
-    // G1 resta sempre invariata
-    driver.totalPoints = g1Points + recalculatedG2 + recalculatedG3
+    for (const entry of entries) {
+      const key = normalizeDriverNameForChampionship(entry.driverName)
+
+      if (key === driverKey) {
+        return entry
+      }
+    }
+  }
+
+  return null
+})()
+
+if (currentRace >= 3 && activeMovement) {
+  const movementType = activeMovement.type
+  const multiplier = movementType === "promote" ? 0.6 : 1.5
+
+  const recalculatedG2 = Math.ceil(g2Points * multiplier)
+  const recalculatedG3 = Math.ceil(g3Points * multiplier)
+
+  // G1 resta sempre invariata
+  const laterPoints = Object.entries(driver.racePoints).reduce((sum, [race, points]) => {
+    const raceNumber = Number(race)
+    return raceNumber >= 4 ? sum + points : sum
+  }, 0)
+
+  driver.totalPoints = g1Points + recalculatedG2 + recalculatedG3 + laterPoints
 
     if (g1Cell) {
       driver.raceResults[1] = {
@@ -7473,6 +7513,32 @@ for (const driver of map.values()) {
     }
   } else {
     driver.totalPoints = Object.values(driver.racePoints).reduce((a, b) => a + b, 0)
+  }
+}
+// Frecce storiche promo/retro: solo grafica, non modifica punti
+for (const movementRound of [3, 6, 9, 12]) {
+  if (movementRound > currentRace) continue
+
+  const historicalRoundMovementState =
+    championshipState.roundMovements?.[movementRound] || {}
+
+  for (const league of CHAMPIONSHIP_LEAGUES) {
+    const entries = historicalRoundMovementState[league] || []
+
+    for (const entry of entries) {
+      const key = normalizeDriverNameForChampionship(entry.driverName)
+      if (!key) continue
+
+      const driver = map.get(key)
+      const cell = driver?.raceResults[movementRound]
+
+      if (!driver || !cell) continue
+
+      driver.raceResults[movementRound] = {
+        ...cell,
+        specialMovement: entry.type,
+      }
+    }
   }
 }
   return Array.from(map.values()).sort((a, b) => {
