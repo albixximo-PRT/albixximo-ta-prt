@@ -6204,7 +6204,32 @@ function resetBaselineDraft() {
       ...r,
       pilota: resolvedPilot,
       auto: (manualAutoOverrides[r.sourcePosGara] ?? r.auto ?? "").trim(),
-      distaccoDalPrimo: (manualDistaccoOverrides[r.sourcePosGara] ?? r.distaccoDalPrimo ?? "").trim(),
+      distaccoDalPrimo: (() => {
+  const value = String(
+    manualDistaccoOverrides[r.sourcePosGara] ?? r.distaccoDalPrimo ?? ""
+  ).trim().toUpperCase()
+
+  return value
+})(),
+tempoTotaleGara: (() => {
+  const override = String(manualDistaccoOverrides[r.sourcePosGara] || "")
+    .trim()
+    .toUpperCase()
+
+  if (
+    override === "DNP" ||
+    override === "DNF" ||
+    override === "DNF-I" ||
+    override === "DNFV" ||
+    override === "BOX" ||
+    override === "DSQ" ||
+    override === "DOPPIATO"
+  ) {
+    return override
+  }
+
+  return r.tempoTotaleGara
+})(),
       tempoQualifica: (() => {
   const value = (
     showQualiModal
@@ -10255,15 +10280,24 @@ function applyDistaccoCorrections() {
   const cleaned: Record<number, string> = {}
 
   for (const row of displayRows) {
-    const draftValue = String(manualDistaccoDraft[row.sourcePosGara] ?? "").trim()
-    const originalValue = String(row.distaccoDalPrimo ?? "").trim()
+    const draftValue = String(manualDistaccoDraft[row.sourcePosGara] ?? "")
+      .trim()
+      .toUpperCase()
+
+    const originalValue = String(row.distaccoDalPrimo ?? "")
+      .trim()
+      .toUpperCase()
 
     if (draftValue && draftValue !== originalValue) {
-      cleaned[row.sourcePosGara] = draftValue.toUpperCase()
+      cleaned[row.sourcePosGara] = draftValue
     }
   }
 
-  setManualDistaccoOverrides(cleaned)
+  setManualDistaccoOverrides((prev) => ({
+    ...prev,
+    ...cleaned,
+  }))
+
   setShowDistaccoModal(false)
 }
 
