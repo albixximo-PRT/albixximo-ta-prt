@@ -6276,31 +6276,43 @@ const presentPilotKeys = new Set(
 
   const missingDnpRows: DisplayRow[] = officialLeaguePilots
     .filter((pilot) => !presentPilotKeys.has(normalizeDriverNameForChampionship(pilot)))
-    .map((pilot, index) => ({
-      posGara: rowsWithPole.length + index + 1,
-      sourcePosGara: maxSourcePos + index + 1,
-      pilota: pilot,
-      auto: "---",
-      tempoTotaleGara: "DNP",
-      distaccoDalPrimo: "DNP",
-      migliorGiroGara: "",
-      tempoQualifica: "",
-      pole: "",
-    }))
+    .map((pilot, index) => {
+  const sourcePosGara = maxSourcePos + index + 1
+  const override = String(manualDistaccoOverrides[sourcePosGara] || "").trim().toUpperCase()
+  const status = override || "DNP"
 
-  return [...rowsWithPole, ...missingDnpRows]
-}, [leagueDriverResolution.baseRows, workbenchDriverLeagueMap, selectedLeague])
-    const hasManualPilotOverrides = useMemo(() => {
-    return Object.keys(manualPilotOverrides).length > 0
-  }, [manualPilotOverrides])
+  return {
+    posGara: rowsWithPole.length + index + 1,
+    sourcePosGara,
+    pilota: pilot,
+    auto: "---",
+    tempoTotaleGara: status,
+    distaccoDalPrimo: status,
+    migliorGiroGara: "",
+    tempoQualifica: "",
+    pole: "",
+  }
+})
 
-  const hasManualDistaccoOverrides = useMemo(() => {
-    return Object.keys(manualDistaccoOverrides).length > 0
-  }, [manualDistaccoOverrides])
+    return [...rowsWithPole, ...missingDnpRows]
+}, [
+  leagueDriverResolution.baseRows,
+  workbenchDriverLeagueMap,
+  selectedLeague,
+  manualDistaccoOverrides,
+])
 
-  const shouldSyncDgTableWithManualEdits = useMemo(() => {
-    return hasManualPilotOverrides || hasManualDistaccoOverrides
-  }, [hasManualPilotOverrides, hasManualDistaccoOverrides])
+const hasManualPilotOverrides = useMemo(() => {
+  return Object.keys(manualPilotOverrides).length > 0
+}, [manualPilotOverrides])
+
+const hasManualDistaccoOverrides = useMemo(() => {
+  return Object.keys(manualDistaccoOverrides).length > 0
+}, [manualDistaccoOverrides])
+
+const shouldSyncDgTableWithManualEdits = useMemo(() => {
+  return hasManualPilotOverrides || hasManualDistaccoOverrides
+}, [hasManualPilotOverrides, hasManualDistaccoOverrides])
 
   const bestQuali = useMemo(() => {
     const poleRow = displayRows.find((r) => (r.pole || "").trim().toUpperCase() === "POLE")
@@ -10216,12 +10228,12 @@ function openDistaccoCorrectionModal() {
 function applyDistaccoCorrections() {
   const cleaned: Record<number, string> = {}
 
-  for (const row of previewRows) {
+  for (const row of displayRows) {
     const draftValue = String(manualDistaccoDraft[row.sourcePosGara] ?? "").trim()
     const originalValue = String(row.distaccoDalPrimo ?? "").trim()
 
     if (draftValue && draftValue !== originalValue) {
-      cleaned[row.sourcePosGara] = draftValue
+      cleaned[row.sourcePosGara] = draftValue.toUpperCase()
     }
   }
 
