@@ -6303,11 +6303,15 @@ const displayRows = useMemo<DisplayRow[]>(() => {
     .filter((pilot) => !presentPilotKeys.has(normalizeDriverNameForChampionship(pilot)))
     .map((pilot, index) => {
       const sourcePosGara = maxSourcePos + index + 1
-      const override = String(manualDistaccoOverrides[sourcePosGara] || "")
-        .trim()
-        .toUpperCase()
+      const draftOverride = String(manualDistaccoDraft[sourcePosGara] || "")
+  .trim()
+  .toUpperCase()
 
-      const status = override || "DNP"
+const savedOverride = String(manualDistaccoOverrides[sourcePosGara] || "")
+  .trim()
+  .toUpperCase()
+
+const status = draftOverride || savedOverride || "DNP"
 
       return {
         posGara: rowsWithPole.length + index + 1,
@@ -6328,6 +6332,8 @@ const displayRows = useMemo<DisplayRow[]>(() => {
   workbenchDriverLeagueMap,
   selectedLeague,
   manualDistaccoOverrides,
+  manualDistaccoDraft,
+  showDistaccoModal,
 ])
 
 const hasManualPilotOverrides = useMemo(() => {
