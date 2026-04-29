@@ -3695,7 +3695,7 @@ useEffect(() => {
   setWorkbenchDriverLeagueMap(cloneDriverLeagueMap(driverLeagueMap))
   setUnknownDriverSelections({})
   setDismissedUnknownDrivers({})
-}, [currentRace, selectedLeague, championshipState, loading, driverLeagueMap])
+}, [currentRace, selectedLeague, championshipState, driverLeagueMap])
 
 function normalizeDriverNameForChampionship(value: string) {
   return String(value || "")
