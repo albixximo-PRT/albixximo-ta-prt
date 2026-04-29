@@ -6805,14 +6805,6 @@ const presentPilotKeys = new Set(
 
   const winner = useMemo(() => finalRows[0]?.pilota || "-", [finalRows])
   const finalRowsWithDnp = useMemo<DisplayRow[]>(() => {
-  const savedSnapshot = championshipState.races[currentRace]?.[selectedLeague]
-
-  // Se la lega è già salvata, la classifica gara resta congelata
-  // e non viene ricalcolata col cassetto aggiornato dopo promo/retro.
-  if (savedSnapshot && Array.isArray(savedSnapshot.finalRows)) {
-    return savedSnapshot.finalRows
-  }
-
   const raceLeague = normalizeLeagueKey(effectiveLega) || selectedLeague
   const drawerPilots = workbenchDriverLeagueMap[raceLeague] || []
 
@@ -6831,12 +6823,10 @@ const presentPilotKeys = new Set(
 
   return [...finalRows, ...dnpRows]
 }, [
-  championshipState,
-  currentRace,
-  selectedLeague,
   finalRows,
   workbenchDriverLeagueMap,
   effectiveLega,
+  selectedLeague,
 ])
 
   const currentRaceSnapshot = useMemo<SavedRaceState>(() => {
