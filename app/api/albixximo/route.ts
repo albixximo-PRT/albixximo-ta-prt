@@ -273,6 +273,7 @@ function normalizePilot(s: string) {
     .replace(/\bM__Apex\b/gi, "M_ApeX_")
     .replace(/\bGrollo_?78\b/gi, "Grollo78")
     .replace(/\bZzic3Fr0St--\b/gi, "ZzIc3Fr0St-_-")
+    .replace(/\bmani\b/gi, "Grollo78")
 
     .trim()
 }
