@@ -2062,43 +2062,41 @@ function renderPrtQualifyingCell({
   exporting?: boolean
 }) {
   const quali = String(row.tempoQualifica || "").trim()
-  const isPole = (row.pole || "").trim().toUpperCase() === "POLE"
+const isPole = (row.pole || "").trim().toUpperCase() === "POLE"
 
-  if (isPole) {
-    return (
-      <Pill
-        left="POLE"
-        right={quali || "NO TIME"}
-        variant="gold"
-        exporting={exporting}
-      />
-    )
-  }
+if (isPole) {
+  return (
+    <Pill
+      left="POLE"
+      right={quali && quali !== "-" ? quali : "NO TIME"}
+      variant="gold"
+      exporting={exporting}
+    />
+  )
+}
 
-  if (!quali) {
-    return (
-      <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: exporting ? "7px 13px" : "6px 12px",
-          borderRadius: 999,
-          border: "1px solid rgba(59,130,246,0.7)",
-          background: "transparent",
-          color: "rgba(147,197,253,0.95)",
-          fontWeight: 800,
-          fontSize: exporting ? 13 : 12,
-          letterSpacing: 0.5,
-          fontFamily:
-            "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial",
-          whiteSpace: "nowrap",
-        }}
-      >
-        NO TIME
-      </span>
-    )
-  }
+if (!quali || quali === "-") {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: exporting ? "7px 13px" : "6px 12px",
+        borderRadius: 999,
+        border: "1px solid rgba(59,130,246,0.7)",
+        background: "transparent",
+        color: "rgba(147,197,253,0.95)",
+        fontWeight: 800,
+        fontSize: exporting ? 13 : 12,
+        letterSpacing: 0.5,
+        whiteSpace: "nowrap",
+      }}
+    >
+      NO TIME
+    </span>
+  )
+}
 
   return (
     <span
