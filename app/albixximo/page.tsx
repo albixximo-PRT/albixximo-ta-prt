@@ -10285,25 +10285,16 @@ function openDistaccoCorrectionModal() {
 function applyDistaccoCorrections() {
   const cleaned: Record<number, string> = {}
 
-  for (const row of displayRows) {
-    const draftValue = String(manualDistaccoDraft[row.sourcePosGara] ?? "")
-      .trim()
-      .toUpperCase()
+  for (const [sourcePosGaraRaw, valueRaw] of Object.entries(manualDistaccoDraft)) {
+    const sourcePosGara = Number(sourcePosGaraRaw)
+    const value = String(valueRaw || "").trim().toUpperCase()
 
-    const originalValue = String(row.distaccoDalPrimo ?? "")
-      .trim()
-      .toUpperCase()
+    if (!sourcePosGara || !value) continue
 
-    if (draftValue && draftValue !== originalValue) {
-      cleaned[row.sourcePosGara] = draftValue
-    }
+    cleaned[sourcePosGara] = value
   }
 
-  setManualDistaccoOverrides((prev) => ({
-    ...prev,
-    ...cleaned,
-  }))
-
+  setManualDistaccoOverrides(cleaned)
   setShowDistaccoModal(false)
 }
 
