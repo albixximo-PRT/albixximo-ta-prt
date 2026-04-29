@@ -2084,24 +2084,21 @@ function renderPrtQualifyingCell({
   row: DisplayRow
   exporting?: boolean
 }) {
-  const quali = String(row.tempoQualifica ?? "").trim()
-  const cleanQuali = quali.replace(/[–—−]/g, "-")
-  const isNoTime = !cleanQuali || cleanQuali === "-"
-
+  const quali = String(row.tempoQualifica || "").trim()
   const isPole = (row.pole || "").trim().toUpperCase() === "POLE"
 
   if (isPole) {
     return (
       <Pill
         left="POLE"
-        right={isNoTime ? "NO TIME" : cleanQuali}
+        right={quali && quali !== "-" ? quali : "NO TIME"}
         variant="gold"
         exporting={exporting}
       />
     )
   }
 
-  if (isNoTime) {
+  if (!quali || quali === "-") {
     return (
       <span
         style={{
@@ -2130,7 +2127,7 @@ function renderPrtQualifyingCell({
         fontSize: exporting ? 18 : 15,
       }}
     >
-      {cleanQuali}
+      {quali}
     </span>
   )
 }
