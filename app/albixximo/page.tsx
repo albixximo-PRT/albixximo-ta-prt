@@ -2080,7 +2080,33 @@ function renderPrtQualifyingCell({
         fontSize: exporting ? 18 : 15,
       }}
     >
-      {row.tempoQualifica || "-"}
+      {row.tempoQualifica ? (
+  row.pole ? (
+    <span className="pill pole-pill">
+      POLE&nbsp;|&nbsp;{row.tempoQualifica}
+    </span>
+  ) : (
+    row.tempoQualifica
+  )
+) : (
+  <span
+  style={{
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "6px 12px",
+    borderRadius: 999,
+    border: "1px solid rgba(59,130,246,0.7)",
+    background: "transparent",
+    color: "rgba(147,197,253,0.95)",
+    fontWeight: 700,
+    fontSize: 12,
+    letterSpacing: 0.5,
+  }}
+>
+  NO TIME
+</span>
+)}
     </span>
   )
 }
@@ -14293,7 +14319,17 @@ const changed = currentValue !== originalValue
                         fontSize: 13,
                       }}
                     >
-                      {row.tempoQualifica || "-"}
+                      {row.tempoQualifica ? (
+  row.pole ? (
+    <span className="pill pole-pill">
+      POLE&nbsp;|&nbsp;{row.tempoQualifica}
+    </span>
+  ) : (
+    row.tempoQualifica
+  )
+) : (
+  <span className="pill no-time-pill">NO TIME</span>
+)}
                     </td>
 
                     <td
