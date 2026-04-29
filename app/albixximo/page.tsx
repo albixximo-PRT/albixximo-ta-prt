@@ -3681,8 +3681,6 @@ useEffect(() => {
 }, [uploadedLeagueHtmls])
 
 useEffect(() => {
-  if (loading) return
-
   const snapshot = championshipState.races[currentRace]?.[selectedLeague]
 
   if (snapshot) {
@@ -3695,7 +3693,7 @@ useEffect(() => {
   setWorkbenchDriverLeagueMap(cloneDriverLeagueMap(driverLeagueMap))
   setUnknownDriverSelections({})
   setDismissedUnknownDrivers({})
-}, [currentRace, selectedLeague, championshipState, loading, driverLeagueMap])
+}, [currentRace, selectedLeague, championshipState])
 
 function normalizeDriverNameForChampionship(value: string) {
   return String(value || "")
