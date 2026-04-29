@@ -2087,6 +2087,20 @@ function renderPrtQualifyingCell({
   const quali = String(row.tempoQualifica || "").trim()
   const isPole = (row.pole || "").trim().toUpperCase() === "POLE"
 
+  const distacco = String(row.distaccoDalPrimo || "").toUpperCase()
+  const tempo = String(row.tempoTotaleGara || "").toUpperCase()
+
+  const isDnp =
+    distacco === "DNP" ||
+    tempo === "DNP" ||
+    tempo === "DNS"
+
+  // 👉 DNP: cella vuota
+  if (isDnp) {
+    return <span />
+  }
+
+  // 👉 POLE
   if (isPole) {
     return (
       <Pill
@@ -2098,6 +2112,7 @@ function renderPrtQualifyingCell({
     )
   }
 
+  // 👉 NO TIME
   if (!quali || quali === "-") {
     return (
       <span
@@ -2121,6 +2136,7 @@ function renderPrtQualifyingCell({
     )
   }
 
+  // 👉 tempo normale
   return (
     <span
       style={{
