@@ -3695,7 +3695,7 @@ useEffect(() => {
   setWorkbenchDriverLeagueMap(cloneDriverLeagueMap(driverLeagueMap))
   setUnknownDriverSelections({})
   setDismissedUnknownDrivers({})
-}, [currentRace, selectedLeague, championshipState, driverLeagueMap])
+}, [currentRace, selectedLeague, championshipState, loading, driverLeagueMap])
 
 function normalizeDriverNameForChampionship(value: string) {
   return String(value || "")
@@ -10501,10 +10501,7 @@ const lastCreatedMovementText = useMemo(() => {
 >
   <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
     <button
-      onClick={() => {
-  if (fileInputRef.current) fileInputRef.current.value = ""
-  fileInputRef.current?.click()
-}}
+      onClick={() => fileInputRef.current?.click()}
       style={{
         padding: "12px 16px",
         borderRadius: 14,
