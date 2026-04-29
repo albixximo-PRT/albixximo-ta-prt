@@ -6262,12 +6262,12 @@ const displayRows = useMemo<DisplayRow[]>(() => {
   }))
 
   const officialLeaguePilots = (workbenchDriverLeagueMap[selectedLeague] || [])
-  .map((name) => String(name || "").trim())
-  .filter(Boolean)
+    .map((name) => String(name || "").trim())
+    .filter(Boolean)
 
-const presentPilotKeys = new Set(
-  rowsWithPole.map((row) => normalizeDriverNameForChampionship(row.pilota))
-)
+  const presentPilotKeys = new Set(
+    rowsWithPole.map((row) => normalizeDriverNameForChampionship(row.pilota))
+  )
 
   const maxSourcePos = rowsWithPole.reduce(
     (max, row) => Math.max(max, Number(row.sourcePosGara) || 0),
@@ -6277,24 +6277,27 @@ const presentPilotKeys = new Set(
   const missingDnpRows: DisplayRow[] = officialLeaguePilots
     .filter((pilot) => !presentPilotKeys.has(normalizeDriverNameForChampionship(pilot)))
     .map((pilot, index) => {
-  const sourcePosGara = maxSourcePos + index + 1
-  const override = String(manualDistaccoOverrides[sourcePosGara] || "").trim().toUpperCase()
-  const status = override || "DNP"
+      const sourcePosGara = maxSourcePos + index + 1
+      const override = String(manualDistaccoOverrides[sourcePosGara] || "")
+        .trim()
+        .toUpperCase()
 
-  return {
-    posGara: rowsWithPole.length + index + 1,
-    sourcePosGara,
-    pilota: pilot,
-    auto: "---",
-    tempoTotaleGara: status,
-    distaccoDalPrimo: status,
-    migliorGiroGara: "",
-    tempoQualifica: "",
-    pole: "",
-  }
-})
+      const status = override || "DNP"
 
-    return [...rowsWithPole, ...missingDnpRows]
+      return {
+        posGara: rowsWithPole.length + index + 1,
+        sourcePosGara,
+        pilota: pilot,
+        auto: "---",
+        tempoTotaleGara: status,
+        distaccoDalPrimo: status,
+        migliorGiroGara: "",
+        tempoQualifica: "",
+        pole: "",
+      }
+    })
+
+  return [...rowsWithPole, ...missingDnpRows]
 }, [
   leagueDriverResolution.baseRows,
   workbenchDriverLeagueMap,
