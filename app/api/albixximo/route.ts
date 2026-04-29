@@ -337,6 +337,11 @@ const KNOWN_CARS = [
   "MAZDA3 Gr.4",
   "GT-R Gr.4",
   "650S Gr.4",
+    "TS050 - Hybrid '16",
+  "919 Hybrid '16",
+  "GR010 HYBRID '21",
+  "R18 '16",
+  "908 HDi FAP '10",
 ]
 
 function normalizeCarLoose(s: string) {
@@ -392,6 +397,11 @@ function looksLikeKnownCarToken(s: string) {
   if (!t) return false
 
   return (
+        t.includes("ts050") ||
+    t.includes("919 hybrid") ||
+    t.includes("gr010") ||
+    t.includes("r18") ||
+    t.includes("908 hdi") ||
     t.includes("gr.4") ||
     t.includes("gr4") ||
     t.includes("gt4") ||
@@ -843,6 +853,11 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
       /\b(gt3|rsr|lms|evo)\b/i.test(t) ||
       /\br8\b/i.test(t) ||
       /\b911\b/i.test(t) ||
+            t.includes("ts050") ||
+      t.includes("919 hybrid") ||
+      t.includes("gr010") ||
+      t.includes("r18") ||
+      t.includes("908 hdi") ||
       t.includes("gr.4") ||
       t.includes("gr4") ||
       t.includes("gt4") ||
