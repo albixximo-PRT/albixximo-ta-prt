@@ -6827,14 +6827,36 @@ const shouldSyncDgTableWithManualEdits = useMemo(() => {
     finalRows.map((row) => normalizeDriverNameForChampionship(row.pilota))
   )
 
+  const maxSourcePos = finalRows.reduce(
+    (max, row) => Math.max(max, Number(row.sourcePosGara) || 0),
+    0
+  )
+
   const missingPilots = drawerPilots.filter((pilot) => {
     const key = normalizeDriverNameForChampionship(pilot)
     return key && !existingKeys.has(key)
   })
 
-  const dnpRows = missingPilots.map((pilot, index) =>
-    createDnpDisplayRow(pilot, finalRows.length + index + 1)
-  )
+  const dnpRows = missingPilots.map((pilot, index) => {
+    const sourcePosGara = maxSourcePos + index + 1
+    const override = String(manualDistaccoOverrides[sourcePosGara] || "")
+      .trim()
+      .toUpperCase()
+
+    const status = override || "DNP"
+
+    return {
+      sourcePosGara,
+      posGara: finalRows.length + index + 1,
+      pilota: pilot,
+      auto: "---",
+      tempoTotaleGara: status,
+      distaccoDalPrimo: status,
+      migliorGiroGara: "",
+      tempoQualifica: "",
+      pole: "",
+    }
+  })
 
   return [...finalRows, ...dnpRows]
 }, [
@@ -6842,6 +6864,7 @@ const shouldSyncDgTableWithManualEdits = useMemo(() => {
   workbenchDriverLeagueMap,
   effectiveLega,
   selectedLeague,
+  manualDistaccoOverrides,
 ])
 
   const currentRaceSnapshot = useMemo<SavedRaceState>(() => {
