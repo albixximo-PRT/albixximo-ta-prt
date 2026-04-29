@@ -1625,15 +1625,12 @@ export async function POST(req: NextRequest) {
   const k = r.pilota ? pilotKey(r.pilota) : ""
 
   const qExact = k ? qualiByPilot.get(k) : undefined
-  const qLoose = !qExact && r.pilota ? findQualiByPilotLoose(r.pilota, qualiRows) : undefined
-  const qPos = qualiByPosDirect.get(r.pos)
+const qLoose = !qExact && r.pilota ? findQualiByPilotLoose(r.pilota, qualiRows) : undefined
 
-  const tempoQualifica =
-    normalizeTimeText((qExact?.tempo ?? "").trim()) ||
-    normalizeTimeText((qLoose?.tempo ?? "").trim()) ||
-    normalizeTimeText((qPos?.tempo ?? "").trim()) ||
-    normalizeTimeText((qualiByPos.get(r.pos) ?? "").trim()) ||
-    ""
+const tempoQualifica =
+  normalizeTimeText((qExact?.tempo ?? "").trim()) ||
+  normalizeTimeText((qLoose?.tempo ?? "").trim()) ||
+  ""
 
   const raceAuto = normalizeKnownCar((r.auto || "").trim())
 
