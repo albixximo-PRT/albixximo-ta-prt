@@ -10501,7 +10501,10 @@ const lastCreatedMovementText = useMemo(() => {
 >
   <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
     <button
-      onClick={() => fileInputRef.current?.click()}
+      onClick={() => {
+  if (fileInputRef.current) fileInputRef.current.value = ""
+  fileInputRef.current?.click()
+}}
       style={{
         padding: "12px 16px",
         borderRadius: 14,
