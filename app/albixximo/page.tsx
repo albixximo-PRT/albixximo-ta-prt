@@ -6170,11 +6170,15 @@ function resetBaselineDraft() {
       pilota: resolvedPilot,
       auto: (manualAutoOverrides[r.sourcePosGara] ?? r.auto ?? "").trim(),
       distaccoDalPrimo: (manualDistaccoOverrides[r.sourcePosGara] ?? r.distaccoDalPrimo ?? "").trim(),
-      tempoQualifica: (
-        showQualiModal
-          ? (manualQualiDraft[r.sourcePosGara] ?? manualQualiOverrides[r.sourcePosGara] ?? r.tempoQualifica ?? "")
-          : (manualQualiOverrides[r.sourcePosGara] ?? r.tempoQualifica ?? "")
-      ).trim(),
+      tempoQualifica: (() => {
+  const value = (
+    showQualiModal
+      ? (manualQualiDraft[r.sourcePosGara] ?? manualQualiOverrides[r.sourcePosGara] ?? r.tempoQualifica ?? "")
+      : (manualQualiOverrides[r.sourcePosGara] ?? r.tempoQualifica ?? "")
+  ).trim()
+
+  return value === "-" ? "" : value
+})(),
     }
   })
 
