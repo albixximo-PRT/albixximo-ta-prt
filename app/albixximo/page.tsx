@@ -2084,22 +2084,44 @@ function renderPrtQualifyingCell({
   row: DisplayRow
   exporting?: boolean
 }) {
-  const quali = String(row.tempoQualifica || "").trim()
+  const quali = String(row.tempoQualifica ?? "").trim()
+  const cleanQuali = quali.replace(/[–—−]/g, "-")
+  const isNoTime = !cleanQuali || cleanQuali === "-"
+
   const isPole = (row.pole || "").trim().toUpperCase() === "POLE"
 
   if (isPole) {
     return (
       <Pill
         left="POLE"
-        right={quali && quali !== "-" ? quali : "NO TIME"}
+        right={isNoTime ? "NO TIME" : cleanQuali}
         variant="gold"
         exporting={exporting}
       />
     )
   }
 
-  if (!quali || quali === "-") {
-    return <NoTimePill exporting={exporting} />
+  if (isNoTime) {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: exporting ? "7px 13px" : "6px 12px",
+          borderRadius: 999,
+          border: "1px solid rgba(59,130,246,0.7)",
+          background: "transparent",
+          color: "rgba(147,197,253,0.95)",
+          fontWeight: 800,
+          fontSize: exporting ? 13 : 12,
+          letterSpacing: 0.5,
+          whiteSpace: "nowrap",
+        }}
+      >
+        NO TIME
+      </span>
+    )
   }
 
   return (
@@ -2108,7 +2130,7 @@ function renderPrtQualifyingCell({
         fontSize: exporting ? 18 : 15,
       }}
     >
-      {quali}
+      {cleanQuali}
     </span>
   )
 }
@@ -14317,19 +14339,19 @@ const changed = currentValue !== originalValue
                     </td>
 
                     <td
-                      style={{
-                        padding: "12px",
-                        borderBottom: "1px solid rgba(255,255,255,0.08)",
-                        color: "rgba(255,255,255,0.86)",
-                        fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                        fontSize: 13,
-                      }}
-                    >
-                      {renderPrtQualifyingCell({
-  row,
-  exporting: false,
-})}
-                    </td>
+  style={{
+    padding: "12px",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+    color: "rgba(255,255,255,0.86)",
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+    fontSize: 13,
+  }}
+>
+  {renderPrtQualifyingCell({
+    row,
+    exporting: false,
+  })}
+</td>
 
                     <td
                       style={{
