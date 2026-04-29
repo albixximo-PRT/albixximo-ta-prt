@@ -2054,28 +2054,7 @@ function renderPrtCarCell({
   )
 }
 
-function renderPrtQualifyingCell({
-  row,
-  exporting = false,
-}: {
-  row: DisplayRow
-  exporting?: boolean
-}) {
-  const quali = String(row.tempoQualifica || "").trim()
-const isPole = (row.pole || "").trim().toUpperCase() === "POLE"
-
-if (isPole) {
-  return (
-    <Pill
-      left="POLE"
-      right={quali && quali !== "-" ? quali : "NO TIME"}
-      variant="gold"
-      exporting={exporting}
-    />
-  )
-}
-
-if (!quali || quali === "-") {
+function NoTimePill({ exporting = false }: { exporting?: boolean }) {
   return (
     <span
       style={{
@@ -2097,6 +2076,31 @@ if (!quali || quali === "-") {
     </span>
   )
 }
+
+function renderPrtQualifyingCell({
+  row,
+  exporting = false,
+}: {
+  row: DisplayRow
+  exporting?: boolean
+}) {
+  const quali = String(row.tempoQualifica || "").trim()
+  const isPole = (row.pole || "").trim().toUpperCase() === "POLE"
+
+  if (isPole) {
+    return (
+      <Pill
+        left="POLE"
+        right={quali && quali !== "-" ? quali : "NO TIME"}
+        variant="gold"
+        exporting={exporting}
+      />
+    )
+  }
+
+  if (!quali || quali === "-") {
+    return <NoTimePill exporting={exporting} />
+  }
 
   return (
     <span
@@ -6262,7 +6266,7 @@ const presentPilotKeys = new Set(
   const bestQuali = useMemo(() => {
     const poleRow = displayRows.find((r) => (r.pole || "").trim().toUpperCase() === "POLE")
     if (poleRow) {
-      return `${poleRow.pilota || "?"}  ${poleRow.tempoQualifica || "-"}`
+      return `${poleRow.pilota || "?"}  ${poleRow.tempoQualifica || "NO TIME"}`
     }
 
     let bestMs: number | null = null
@@ -14317,17 +14321,10 @@ const changed = currentValue !== originalValue
                         fontSize: 13,
                       }}
                     >
-                      {row.tempoQualifica ? (
-  row.pole ? (
-    <span className="pill pole-pill">
-      POLE&nbsp;|&nbsp;{row.tempoQualifica}
-    </span>
-  ) : (
-    row.tempoQualifica
-  )
-) : (
-  <span className="pill no-time-pill">NO TIME</span>
-)}
+                      {renderPrtQualifyingCell({
+  row,
+  exporting: false,
+})}
                     </td>
 
                     <td
