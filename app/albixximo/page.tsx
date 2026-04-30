@@ -9345,18 +9345,6 @@ renderRacePngTabs();
 
   if (homePanel && !activeLeague) {
     homePanel.style.display = "grid";
-
-    const card = homePanel.querySelector(".home-card");
-
-    if (card) {
-      setTimeout(() => {
-        card.classList.add("fade-out");
-
-        setTimeout(() => {
-          homePanel.style.display = "none";
-        }, 1600);
-      }, 3000);
-    }
   }
 }
 
@@ -9529,6 +9517,16 @@ renderLeagueMovements(league);
 
     renderTabs();
 
+    if (window.requestAnimationFrame) {
+      window.requestAnimationFrame(function() {
+        window.requestAnimationFrame(function() {
+          finishBoot();
+        });
+      });
+    } else {
+      setTimeout(finishBoot, 80);
+    }
+
 // SPLASH SCREEN
 
 const splashDots = document.getElementById("splashDots");
@@ -9549,10 +9547,6 @@ animateDots();
 setTimeout(() => {
   const splash = document.getElementById("splashScreen");
   if (splash) splash.style.display = "none";
-
-  // 👇 AVVIA QUI la home
-  finishBoot();
-
 }, 8000);
   </script>
 </body>
