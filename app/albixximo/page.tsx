@@ -6305,7 +6305,13 @@ const displayRows = useMemo<DisplayRow[]>(() => {
     .filter((pilot) => !presentPilotKeys.has(normalizeDriverNameForChampionship(pilot)))
     .map((pilot, index) => {
       const sourcePosGara = maxSourcePos + index + 1
-      const draftOverride = String(manualDistaccoDraft[sourcePosGara] || "")
+      const pilotKey = normalizeDriverNameForChampionship(pilot)
+
+const overrideByPilot = String(manualDistaccoPilotOverrides[pilotKey] || "")
+  .trim()
+  .toUpperCase()
+
+const draftOverride = String(manualDistaccoDraft[sourcePosGara] || "")
   .trim()
   .toUpperCase()
 
@@ -6313,7 +6319,7 @@ const savedOverride = String(manualDistaccoOverrides[sourcePosGara] || "")
   .trim()
   .toUpperCase()
 
-const status = draftOverride || savedOverride || "DNP"
+const status = overrideByPilot || draftOverride || savedOverride || "DNP"
 
       return {
         posGara: rowsWithPole.length + index + 1,
@@ -6905,6 +6911,7 @@ const status = overrideByPilot || overrideBySource || "DNP"
   effectiveLega,
   selectedLeague,
   manualDistaccoOverrides,
+  manualDistaccoPilotOverrides,
 ])
 
   const currentRaceSnapshot = useMemo<SavedRaceState>(() => {
