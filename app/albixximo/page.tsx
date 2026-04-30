@@ -3480,6 +3480,8 @@ const [showAutoModal, setShowAutoModal] = useState(false)
 const [manualAutoDraft, setManualAutoDraft] = useState<Record<number, string>>({})
 const [showDistaccoModal, setShowDistaccoModal] = useState(false)
 const [manualDistaccoDraft, setManualDistaccoDraft] = useState<Record<number, string>>({})
+const [manualDistaccoPilotOverrides, setManualDistaccoPilotOverrides] =
+  useState<Record<string, string>>({})
 const [showQualiModal, setShowQualiModal] = useState(false)
 const [manualQualiOverrides, setManualQualiOverrides] = useState<Record<number, string>>({})
 const [manualQualiDraft, setManualQualiDraft] = useState<Record<number, string>>({})
@@ -6331,6 +6333,7 @@ const status = draftOverride || savedOverride || "DNP"
   leagueDriverResolution.baseRows,
   workbenchDriverLeagueMap,
   selectedLeague,
+  manualDistaccoPilotOverrides,
   manualDistaccoOverrides,
   manualDistaccoDraft,
   showDistaccoModal,
@@ -6870,11 +6873,17 @@ const shouldSyncDgTableWithManualEdits = useMemo(() => {
 
   const dnpRows = missingPilots.map((pilot, index) => {
     const sourcePosGara = maxSourcePos + index + 1
-    const override = String(manualDistaccoOverrides[sourcePosGara] || "")
-      .trim()
-      .toUpperCase()
+    const pilotKey = normalizeDriverNameForChampionship(pilot)
 
-    const status = override || "DNP"
+const overrideByPilot = String(manualDistaccoPilotOverrides[pilotKey] || "")
+  .trim()
+  .toUpperCase()
+
+const overrideBySource = String(manualDistaccoOverrides[sourcePosGara] || "")
+  .trim()
+  .toUpperCase()
+
+const status = overrideByPilot || overrideBySource || "DNP"
 
     return {
       sourcePosGara,
@@ -10283,23 +10292,32 @@ function openDistaccoCorrectionModal() {
 }
 
 function applyDistaccoCorrections() {
-  const cleaned: Record<number, string> = {}
+  const cleanedBySource: Record<number, string> = {}
+  const cleanedByPilot: Record<string, string> = {}
 
-  for (const [sourcePosGaraRaw, valueRaw] of Object.entries(manualDistaccoDraft)) {
-    const sourcePosGara = Number(sourcePosGaraRaw)
-    const value = String(valueRaw || "").trim().toUpperCase()
+  for (const row of displayRows) {
+    const value = String(manualDistaccoDraft[row.sourcePosGara] || "")
+      .trim()
+      .toUpperCase()
 
-    if (!sourcePosGara || !value) continue
+    if (!value) continue
 
-    cleaned[sourcePosGara] = value
+    cleanedBySource[row.sourcePosGara] = value
+
+    const pilotKey = normalizeDriverNameForChampionship(row.pilota)
+    if (pilotKey) {
+      cleanedByPilot[pilotKey] = value
+    }
   }
 
-  setManualDistaccoOverrides(cleaned)
+  setManualDistaccoOverrides(cleanedBySource)
+  setManualDistaccoPilotOverrides(cleanedByPilot)
   setShowDistaccoModal(false)
 }
 
 function resetDistaccoCorrections() {
   setManualDistaccoOverrides({})
+  setManualDistaccoPilotOverrides({})
   setManualDistaccoDraft({})
   setShowDistaccoModal(false)
 }
