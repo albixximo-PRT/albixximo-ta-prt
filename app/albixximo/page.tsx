@@ -8345,7 +8345,7 @@ try {
 
 .race-png-tabs {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
 }
 
@@ -9296,7 +9296,12 @@ function renderRacePngTabs() {
 
   racePngTabs.innerHTML = "";
 
-  orderedLeagues.forEach(function(league) {
+  const raceLeagues =
+    selectedRacePng === "1"
+      ? ["ELITE", "PLATINUM", "MASTER", "PRO", "GT", "AMA"]
+      : orderedLeagues;
+
+  raceLeagues.forEach(function(league) {
     const btn = document.createElement("button");
     btn.className = "tab-btn saved preloaded";
     btn.type = "button";
