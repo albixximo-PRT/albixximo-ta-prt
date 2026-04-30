@@ -6304,35 +6304,35 @@ const displayRows = useMemo<DisplayRow[]>(() => {
   const missingDnpRows: DisplayRow[] = officialLeaguePilots
     .filter((pilot) => !presentPilotKeys.has(normalizeDriverNameForChampionship(pilot)))
     .map((pilot, index) => {
-      const sourcePosGara = maxSourcePos + index + 1
-      const pilotKey = normalizeDriverNameForChampionship(pilot)
+  const sourcePosGara = maxSourcePos + index + 1
+  const pilotKey = normalizeDriverNameForChampionship(pilot)
 
-const overrideByPilot = String(manualDistaccoPilotOverrides[pilotKey] || "")
-  .trim()
-  .toUpperCase()
+  const draftOverride = String(manualDistaccoDraft[sourcePosGara] || "")
+    .trim()
+    .toUpperCase()
 
-const draftOverride = String(manualDistaccoDraft[sourcePosGara] || "")
-  .trim()
-  .toUpperCase()
+  const savedOverrideBySource = String(manualDistaccoOverrides[sourcePosGara] || "")
+    .trim()
+    .toUpperCase()
 
-const savedOverride = String(manualDistaccoOverrides[sourcePosGara] || "")
-  .trim()
-  .toUpperCase()
+  const savedOverrideByPilot = String(manualDistaccoPilotOverrides[pilotKey] || "")
+    .trim()
+    .toUpperCase()
 
-const status = overrideByPilot || draftOverride || savedOverride || "DNP"
+  const status = draftOverride || savedOverrideByPilot || savedOverrideBySource || "DNP"
 
-      return {
-        posGara: rowsWithPole.length + index + 1,
-        sourcePosGara,
-        pilota: pilot,
-        auto: "---",
-        tempoTotaleGara: status,
-        distaccoDalPrimo: status,
-        migliorGiroGara: "",
-        tempoQualifica: "",
-        pole: "",
-      }
-    })
+  return {
+    posGara: rowsWithPole.length + index + 1,
+    sourcePosGara,
+    pilota: pilot,
+    auto: "---",
+    tempoTotaleGara: status,
+    distaccoDalPrimo: status,
+    migliorGiroGara: "",
+    tempoQualifica: "",
+    pole: "",
+  }
+})
 
   return [...rowsWithPole, ...missingDnpRows]
 }, [
@@ -6881,15 +6881,19 @@ const shouldSyncDgTableWithManualEdits = useMemo(() => {
     const sourcePosGara = maxSourcePos + index + 1
     const pilotKey = normalizeDriverNameForChampionship(pilot)
 
-const overrideByPilot = String(manualDistaccoPilotOverrides[pilotKey] || "")
+const draftOverride = String(manualDistaccoDraft[sourcePosGara] || "")
   .trim()
   .toUpperCase()
 
-const overrideBySource = String(manualDistaccoOverrides[sourcePosGara] || "")
+const savedOverrideBySource = String(manualDistaccoOverrides[sourcePosGara] || "")
   .trim()
   .toUpperCase()
 
-const status = overrideByPilot || overrideBySource || "DNP"
+const savedOverrideByPilot = String(manualDistaccoPilotOverrides[pilotKey] || "")
+  .trim()
+  .toUpperCase()
+
+const status = draftOverride || savedOverrideByPilot || savedOverrideBySource || "DNP"
 
     return {
       sourcePosGara,
@@ -6912,6 +6916,7 @@ const status = overrideByPilot || overrideBySource || "DNP"
   selectedLeague,
   manualDistaccoOverrides,
   manualDistaccoPilotOverrides,
+  manualDistaccoDraft,
 ])
 
   const currentRaceSnapshot = useMemo<SavedRaceState>(() => {
@@ -7468,7 +7473,14 @@ for (let raceNumber = 3; raceNumber <= currentRace; raceNumber++) {
 const resolvedPoints = snapshotPointsMap[pilotName] ?? 0
 const rawTempo = tempoLikeGt7(row).trim().toUpperCase()
 
-let resolvedStatus: ChampionshipCellStatus | null = baseCell.status
+const dnpForcedDsq =
+  rawTempo === "DNP" &&
+  String(snapshot.manualDistaccoOverrides?.[row.sourcePosGara] || "")
+    .trim()
+    .toUpperCase() === "DSQ"
+
+let resolvedStatus: ChampionshipCellStatus | null =
+  dnpForcedDsq ? "DSQ" : baseCell.status
 
 if (rawTempo === "DNFV") {
   resolvedStatus = "DNFV"
@@ -7477,7 +7489,7 @@ if (rawTempo === "DNFV") {
 } else if (rawTempo === "DNF") {
   resolvedStatus = "DNF"
 } else if (rawTempo === "DNP") {
-  resolvedStatus = "DNP"
+  resolvedStatus = dnpForcedDsq ? "DSQ" : "DNP"
 } else if (rawTempo === "BOX") {
   resolvedStatus = "BOX"
 } else if (rawTempo === "DSQ") {
