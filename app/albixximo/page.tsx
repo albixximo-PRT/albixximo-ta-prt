@@ -3480,8 +3480,6 @@ const [showAutoModal, setShowAutoModal] = useState(false)
 const [manualAutoDraft, setManualAutoDraft] = useState<Record<number, string>>({})
 const [showDistaccoModal, setShowDistaccoModal] = useState(false)
 const [manualDistaccoDraft, setManualDistaccoDraft] = useState<Record<number, string>>({})
-const [manualDistaccoPilotOverrides, setManualDistaccoPilotOverrides] =
-  useState<Record<string, string>>({})
 const [showQualiModal, setShowQualiModal] = useState(false)
 const [manualQualiOverrides, setManualQualiOverrides] = useState<Record<number, string>>({})
 const [manualQualiDraft, setManualQualiDraft] = useState<Record<number, string>>({})
@@ -6206,32 +6204,7 @@ function resetBaselineDraft() {
       ...r,
       pilota: resolvedPilot,
       auto: (manualAutoOverrides[r.sourcePosGara] ?? r.auto ?? "").trim(),
-      distaccoDalPrimo: (() => {
-  const value = String(
-    manualDistaccoOverrides[r.sourcePosGara] ?? r.distaccoDalPrimo ?? ""
-  ).trim().toUpperCase()
-
-  return value
-})(),
-tempoTotaleGara: (() => {
-  const override = String(manualDistaccoOverrides[r.sourcePosGara] || "")
-    .trim()
-    .toUpperCase()
-
-  if (
-    override === "DNP" ||
-    override === "DNF" ||
-    override === "DNF-I" ||
-    override === "DNFV" ||
-    override === "BOX" ||
-    override === "DSQ" ||
-    override === "DOPPIATO"
-  ) {
-    return override
-  }
-
-  return r.tempoTotaleGara
-})(),
+      distaccoDalPrimo: (manualDistaccoOverrides[r.sourcePosGara] ?? r.distaccoDalPrimo ?? "").trim(),
       tempoQualifica: (() => {
   const value = (
     showQualiModal
@@ -6289,12 +6262,12 @@ const displayRows = useMemo<DisplayRow[]>(() => {
   }))
 
   const officialLeaguePilots = (workbenchDriverLeagueMap[selectedLeague] || [])
-    .map((name) => String(name || "").trim())
-    .filter(Boolean)
+  .map((name) => String(name || "").trim())
+  .filter(Boolean)
 
-  const presentPilotKeys = new Set(
-    rowsWithPole.map((row) => normalizeDriverNameForChampionship(row.pilota))
-  )
+const presentPilotKeys = new Set(
+  rowsWithPole.map((row) => normalizeDriverNameForChampionship(row.pilota))
+)
 
   const maxSourcePos = rowsWithPole.reduce(
     (max, row) => Math.max(max, Number(row.sourcePosGara) || 0),
@@ -6303,62 +6276,31 @@ const displayRows = useMemo<DisplayRow[]>(() => {
 
   const missingDnpRows: DisplayRow[] = officialLeaguePilots
     .filter((pilot) => !presentPilotKeys.has(normalizeDriverNameForChampionship(pilot)))
-    .map((pilot, index) => {
-  const sourcePosGara = maxSourcePos + index + 1
-  const pilotKey = normalizeDriverNameForChampionship(pilot)
-
-  const draftOverride = String(manualDistaccoDraft[sourcePosGara] || "")
-    .trim()
-    .toUpperCase()
-
-  const savedOverrideBySource = String(manualDistaccoOverrides[sourcePosGara] || "")
-    .trim()
-    .toUpperCase()
-
-  const savedOverrideByPilot = String(manualDistaccoPilotOverrides[pilotKey] || "")
-    .trim()
-    .toUpperCase()
-
-  const status =
-  draftOverride === "DSQ" || savedOverrideByPilot === "DSQ" || savedOverrideBySource === "DSQ"
-    ? "DSQ"
-    : "DNP"
-
-  return {
-    posGara: rowsWithPole.length + index + 1,
-    sourcePosGara,
-    pilota: pilot,
-    auto: "---",
-    tempoTotaleGara: status,
-    distaccoDalPrimo: status,
-    migliorGiroGara: "",
-    tempoQualifica: "",
-    pole: "",
-  }
-})
+    .map((pilot, index) => ({
+      posGara: rowsWithPole.length + index + 1,
+      sourcePosGara: maxSourcePos + index + 1,
+      pilota: pilot,
+      auto: "---",
+      tempoTotaleGara: "DNP",
+      distaccoDalPrimo: "DNP",
+      migliorGiroGara: "",
+      tempoQualifica: "",
+      pole: "",
+    }))
 
   return [...rowsWithPole, ...missingDnpRows]
-}, [
-  leagueDriverResolution.baseRows,
-  workbenchDriverLeagueMap,
-  selectedLeague,
-  manualDistaccoPilotOverrides,
-  manualDistaccoOverrides,
-  manualDistaccoDraft,
-  showDistaccoModal,
-])
+}, [leagueDriverResolution.baseRows, workbenchDriverLeagueMap, selectedLeague])
+    const hasManualPilotOverrides = useMemo(() => {
+    return Object.keys(manualPilotOverrides).length > 0
+  }, [manualPilotOverrides])
 
-const hasManualPilotOverrides = useMemo(() => {
-  return Object.keys(manualPilotOverrides).length > 0
-}, [manualPilotOverrides])
+  const hasManualDistaccoOverrides = useMemo(() => {
+    return Object.keys(manualDistaccoOverrides).length > 0
+  }, [manualDistaccoOverrides])
 
-const hasManualDistaccoOverrides = useMemo(() => {
-  return Object.keys(manualDistaccoOverrides).length > 0
-}, [manualDistaccoOverrides])
-
-const shouldSyncDgTableWithManualEdits = useMemo(() => {
-  return hasManualPilotOverrides || hasManualDistaccoOverrides
-}, [hasManualPilotOverrides, hasManualDistaccoOverrides])
+  const shouldSyncDgTableWithManualEdits = useMemo(() => {
+    return hasManualPilotOverrides || hasManualDistaccoOverrides
+  }, [hasManualPilotOverrides, hasManualDistaccoOverrides])
 
   const bestQuali = useMemo(() => {
     const poleRow = displayRows.find((r) => (r.pole || "").trim().toUpperCase() === "POLE")
@@ -6870,46 +6812,14 @@ const shouldSyncDgTableWithManualEdits = useMemo(() => {
     finalRows.map((row) => normalizeDriverNameForChampionship(row.pilota))
   )
 
-  const maxSourcePos = finalRows.reduce(
-    (max, row) => Math.max(max, Number(row.sourcePosGara) || 0),
-    0
-  )
-
   const missingPilots = drawerPilots.filter((pilot) => {
     const key = normalizeDriverNameForChampionship(pilot)
     return key && !existingKeys.has(key)
   })
 
-  const dnpRows = missingPilots.map((pilot, index) => {
-    const sourcePosGara = maxSourcePos + index + 1
-    const pilotKey = normalizeDriverNameForChampionship(pilot)
-
-const draftOverride = String(manualDistaccoDraft[sourcePosGara] || "")
-  .trim()
-  .toUpperCase()
-
-const savedOverrideBySource = String(manualDistaccoOverrides[sourcePosGara] || "")
-  .trim()
-  .toUpperCase()
-
-const savedOverrideByPilot = String(manualDistaccoPilotOverrides[pilotKey] || "")
-  .trim()
-  .toUpperCase()
-
-const status = draftOverride || savedOverrideByPilot || savedOverrideBySource || "DNP"
-
-    return {
-      sourcePosGara,
-      posGara: finalRows.length + index + 1,
-      pilota: pilot,
-      auto: "---",
-      tempoTotaleGara: status,
-      distaccoDalPrimo: status,
-      migliorGiroGara: "",
-      tempoQualifica: "",
-      pole: "",
-    }
-  })
+  const dnpRows = missingPilots.map((pilot, index) =>
+    createDnpDisplayRow(pilot, finalRows.length + index + 1)
+  )
 
   return [...finalRows, ...dnpRows]
 }, [
@@ -6917,9 +6827,6 @@ const status = draftOverride || savedOverrideByPilot || savedOverrideBySource ||
   workbenchDriverLeagueMap,
   effectiveLega,
   selectedLeague,
-  manualDistaccoOverrides,
-  manualDistaccoPilotOverrides,
-  manualDistaccoDraft,
 ])
 
   const currentRaceSnapshot = useMemo<SavedRaceState>(() => {
@@ -7476,14 +7383,7 @@ for (let raceNumber = 3; raceNumber <= currentRace; raceNumber++) {
 const resolvedPoints = snapshotPointsMap[pilotName] ?? 0
 const rawTempo = tempoLikeGt7(row).trim().toUpperCase()
 
-const dnpForcedDsq =
-  rawTempo === "DNP" &&
-  String(snapshot.manualDistaccoOverrides?.[row.sourcePosGara] || "")
-    .trim()
-    .toUpperCase() === "DSQ"
-
-let resolvedStatus: ChampionshipCellStatus | null =
-  dnpForcedDsq ? "DSQ" : baseCell.status
+let resolvedStatus: ChampionshipCellStatus | null = baseCell.status
 
 if (rawTempo === "DNFV") {
   resolvedStatus = "DNFV"
@@ -7492,7 +7392,7 @@ if (rawTempo === "DNFV") {
 } else if (rawTempo === "DNF") {
   resolvedStatus = "DNF"
 } else if (rawTempo === "DNP") {
-  resolvedStatus = dnpForcedDsq ? "DSQ" : "DNP"
+  resolvedStatus = "DNP"
 } else if (rawTempo === "BOX") {
   resolvedStatus = "BOX"
 } else if (rawTempo === "DSQ") {
@@ -9975,26 +9875,26 @@ function confirmSaveCurrentLeague() {
     normalizeLeagueKey(effectiveLega) || selectedLeague
 
   const snapshot: SavedLeagueSnapshot = {
-  savedAt: new Date().toISOString(),
-  league: saveLeagueKey,
-  raceNumber: currentRace,
-  csv: finalCsv,
-  rows,
-  finalRows: finalRowsWithDnp,
-  unionMeta,
-  penalties,
-  lapOverrides,
-  dnfOverrides,
-  manualGaraOverride,
-  manualLegaOverride,
-  manualPilotOverrides,
-  manualAutoOverrides,
-  manualDistaccoOverrides,
-  manualQualiOverrides,
-  bestQuali,
-  bestRaceLap,
-  winner,
-}
+    savedAt: new Date().toISOString(),
+    league: saveLeagueKey,
+    raceNumber: currentRace,
+    csv: finalCsv,
+    rows,
+    finalRows,
+    unionMeta,
+    penalties,
+    lapOverrides,
+    dnfOverrides,
+    manualGaraOverride,
+    manualLegaOverride,
+    manualPilotOverrides,
+    manualAutoOverrides,
+    manualDistaccoOverrides,
+    manualQualiOverrides,
+    bestQuali,
+    bestRaceLap,
+    winner,
+  }
 
   setChampionshipState((prev) => {
     const prevRace = prev.races[currentRace] || {}
@@ -10314,33 +10214,23 @@ function openDistaccoCorrectionModal() {
 }
 
 function applyDistaccoCorrections() {
-  const cleanedBySource: Record<number, string> = {}
-  const cleanedByPilot: Record<string, string> = {}
+  const cleaned: Record<number, string> = {}
 
-  for (const row of displayRows) {
-    const value = String(manualDistaccoDraft[row.sourcePosGara] || "")
-      .trim()
-      .toUpperCase()
+  for (const row of previewRows) {
+    const draftValue = String(manualDistaccoDraft[row.sourcePosGara] ?? "").trim()
+    const originalValue = String(row.distaccoDalPrimo ?? "").trim()
 
-    if (value !== "DSQ") continue
-
-    const original = String(row.distaccoDalPrimo || "").trim().toUpperCase()
-    if (original !== "DNP") continue
-
-    cleanedBySource[row.sourcePosGara] = value
-
-    const pilotKey = normalizeDriverNameForChampionship(row.pilota)
-    if (pilotKey) cleanedByPilot[pilotKey] = value
+    if (draftValue && draftValue !== originalValue) {
+      cleaned[row.sourcePosGara] = draftValue
+    }
   }
 
-  setManualDistaccoOverrides(cleanedBySource)
-  setManualDistaccoPilotOverrides(cleanedByPilot)
+  setManualDistaccoOverrides(cleaned)
   setShowDistaccoModal(false)
 }
 
 function resetDistaccoCorrections() {
   setManualDistaccoOverrides({})
-  setManualDistaccoPilotOverrides({})
   setManualDistaccoDraft({})
   setShowDistaccoModal(false)
 }
