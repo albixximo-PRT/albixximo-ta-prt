@@ -9362,6 +9362,23 @@ function openRacePng(league) {
 
   img.src = src;
 
+  // Chiude eventuale classifica assoluta aperta
+activeLeague = null;
+renderTabs();
+
+if (iframeWrap) {
+  iframeWrap.classList.remove("visible");
+}
+
+if (frame) {
+  frame.innerHTML = "";
+}
+
+if (movementsWrap) {
+  movementsWrap.classList.remove("visible");
+  movementsWrap.innerHTML = "";
+}
+  
   if (bootingPanel) bootingPanel.style.display = "none";
   if (homePanel) homePanel.style.display = "none";
 }
