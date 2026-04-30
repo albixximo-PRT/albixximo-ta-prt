@@ -7705,16 +7705,16 @@ const finalRowsWithDnp = useMemo<DisplayRow[]>(() => {
       )
     })
     .map((driver, index) => ({
-      sourcePosGara: 9000 + index,
-      posGara: finalRows.length + index + 1,
-      pilota: driver.pilota,
-      auto: "---",
-      tempoTotaleGara: "DSQ",
-      distaccoDalPrimo: "DSQ",
-      migliorGiroGara: "",
-      tempoQualifica: "",
-      pole: "",
-    }))
+  sourcePosGara: 9000 + index,
+  posGara: finalRows.length + index + 1,
+  pilota: driver.pilota,
+  auto: "---",
+  tempoTotaleGara: "DNP",
+  distaccoDalPrimo: "DNP",
+  migliorGiroGara: "",
+  tempoQualifica: "",
+  pole: "",
+}))
 
   const existingKeysAfterDsq = new Set([
     ...Array.from(existingKeys),
