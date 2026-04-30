@@ -6319,7 +6319,10 @@ const displayRows = useMemo<DisplayRow[]>(() => {
     .trim()
     .toUpperCase()
 
-  const status = draftOverride || savedOverrideByPilot || savedOverrideBySource || "DNP"
+  const status =
+  draftOverride === "DSQ" || savedOverrideByPilot === "DSQ" || savedOverrideBySource === "DSQ"
+    ? "DSQ"
+    : "DNP"
 
   return {
     posGara: rowsWithPole.length + index + 1,
@@ -10319,14 +10322,15 @@ function applyDistaccoCorrections() {
       .trim()
       .toUpperCase()
 
-    if (!value) continue
+    if (value !== "DSQ") continue
+
+    const original = String(row.distaccoDalPrimo || "").trim().toUpperCase()
+    if (original !== "DNP") continue
 
     cleanedBySource[row.sourcePosGara] = value
 
     const pilotKey = normalizeDriverNameForChampionship(row.pilota)
-    if (pilotKey) {
-      cleanedByPilot[pilotKey] = value
-    }
+    if (pilotKey) cleanedByPilot[pilotKey] = value
   }
 
   setManualDistaccoOverrides(cleanedBySource)
