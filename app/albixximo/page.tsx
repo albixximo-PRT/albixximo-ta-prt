@@ -9452,6 +9452,21 @@ btn.innerHTML = hasPage
 
       activeLeague = league;
       renderTabs();
+      // Chiude eventuale classifica gara PNG aperta
+if (racePngViewer) {
+  racePngViewer.classList.remove("visible");
+  racePngViewer.classList.remove("loading");
+}
+
+if (racePngImage) {
+  racePngImage.src = "";
+}
+
+if (racePngTabs) {
+  racePngTabs.querySelectorAll("button").forEach(function(btn) {
+    btn.classList.remove("active-loading", "active-ready");
+  });
+}
 
       if (bootingPanel) {
         bootingPanel.style.display = "none";
