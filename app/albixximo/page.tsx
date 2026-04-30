@@ -7646,12 +7646,27 @@ for (const movementRound of [3, 6, 9, 12]) {
 
 return Array.from(map.values())
   .filter((driver) => {
-    const disqualificationRace = getDnpDisqualificationRace(driver)
+  const disqualificationRace = getDnpDisqualificationRace(driver)
 
-    if (disqualificationRace == null) return true
+  // Se non è mai stato squalificato → resta
+  if (disqualificationRace == null) return true
 
-    return currentRace <= disqualificationRace
-  })
+  // Se siamo nella gara della DSQ → resta visibile
+  if (currentRace <= disqualificationRace) return true
+
+  // Da qui in poi: siamo DOPO la DSQ
+  // 👉 resta SOLO se è ancora nel cassetto
+
+  const isStillInDrawer = CHAMPIONSHIP_LEAGUES.some((league) =>
+    (driverLeagueMap[league] || []).some(
+      (p) =>
+        normalizeDriverNameForChampionship(p) ===
+        normalizeDriverNameForChampionship(driver.pilota)
+    )
+  )
+
+  return isStillInDrawer
+})
   .sort((a, b) => {
     if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints
     return a.pilota.localeCompare(b.pilota, "it", { sensitivity: "base" })
