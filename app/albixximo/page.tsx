@@ -4574,7 +4574,10 @@ function CompactChampionshipPill({
 
         whiteSpace: "nowrap",
         lineHeight: 1,
-        color: variant === "fuchsia" ? "#ffffff" : "rgba(0,0,0,0.92)",
+        color:
+  variant === "fuchsia" || variant === "dsq"
+    ? "#ffffff"
+    : "rgba(0,0,0,0.92)",
         fontFamily: "Arial, Helvetica, sans-serif",
         verticalAlign: "middle",
 
