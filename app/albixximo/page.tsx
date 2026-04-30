@@ -6851,30 +6851,7 @@ const presentPilotKeys = new Set(
   )
 
   const winner = useMemo(() => finalRows[0]?.pilota || "-", [finalRows])
-  const finalRowsWithDnp = useMemo<DisplayRow[]>(() => {
-  const raceLeague = normalizeLeagueKey(effectiveLega) || selectedLeague
-  const drawerPilots = workbenchDriverLeagueMap[raceLeague] || []
-
-  const existingKeys = new Set(
-    finalRows.map((row) => normalizeDriverNameForChampionship(row.pilota))
-  )
-
-  const missingPilots = drawerPilots.filter((pilot) => {
-    const key = normalizeDriverNameForChampionship(pilot)
-    return key && !existingKeys.has(key)
-  })
-
-  const dnpRows = missingPilots.map((pilot, index) =>
-    createDnpDisplayRow(pilot, finalRows.length + index + 1)
-  )
-
-  return [...finalRows, ...dnpRows]
-}, [
-  finalRows,
-  workbenchDriverLeagueMap,
-  effectiveLega,
-  selectedLeague,
-])
+  
 
   const currentRaceSnapshot = useMemo<SavedRaceState>(() => {
   return championshipState.races[currentRace] || {}
@@ -7694,6 +7671,68 @@ const driverChampionshipByLeague = useMemo(() => {
     GT: driverChampionship.filter((driver) => driver.league === "GT"),
   }
 }, [driverChampionship])
+
+const finalRowsWithDnp = useMemo<DisplayRow[]>(() => {
+  const raceLeague = normalizeLeagueKey(effectiveLega) || selectedLeague
+  const drawerPilots = workbenchDriverLeagueMap[raceLeague] || []
+
+  const existingKeys = new Set(
+    finalRows.map((row) => normalizeDriverNameForChampionship(row.pilota))
+  )
+
+  const recoveredDsqRows: DisplayRow[] = driverChampionship
+    .filter((driver) => {
+      const driverLeague = normalizeLeagueKey(driver.league)
+      const cell = driver.raceResults[currentRace]
+      const key = normalizeDriverNameForChampionship(driver.pilota)
+
+      return (
+        driverLeague === raceLeague &&
+        cell?.status === "DSQ" &&
+        key &&
+        !existingKeys.has(key)
+      )
+    })
+    .map((driver, index) => ({
+      sourcePosGara: 9000 + index,
+      posGara: finalRows.length + index + 1,
+      pilota: driver.pilota,
+      auto: "---",
+      tempoTotaleGara: "DSQ",
+      distaccoDalPrimo: "DSQ",
+      migliorGiroGara: "",
+      tempoQualifica: "",
+      pole: "",
+    }))
+
+  const existingKeysAfterDsq = new Set([
+    ...Array.from(existingKeys),
+    ...recoveredDsqRows.map((row) =>
+      normalizeDriverNameForChampionship(row.pilota)
+    ),
+  ])
+
+  const missingPilots = drawerPilots.filter((pilot) => {
+    const key = normalizeDriverNameForChampionship(pilot)
+    return key && !existingKeysAfterDsq.has(key)
+  })
+
+  const dnpRows = missingPilots.map((pilot, index) =>
+    createDnpDisplayRow(
+      pilot,
+      finalRows.length + recoveredDsqRows.length + index + 1
+    )
+  )
+
+  return [...finalRows, ...recoveredDsqRows, ...dnpRows]
+}, [
+  finalRows,
+  driverChampionship,
+  currentRace,
+  workbenchDriverLeagueMap,
+  effectiveLega,
+  selectedLeague,
+])
 
 const driversToRemoveAfterDsq = useMemo(() => {
   return driverChampionship.filter((driver) => {
@@ -10054,24 +10093,12 @@ function removePilotFromLeagueDrawer(league: ChampionshipLeagueKey, pilotName: s
 function removeDsqDriversFromDrawer() {
   if (driversToRemoveAfterDsq.length === 0) return
 
-  const driversToKeepInCurrentRace = driversToRemoveAfterDsq
-    .map((driver) => ({
-      pilota: driver.pilota,
-      league: normalizeLeagueKey(driver.league) || selectedLeague,
-      disqualificationRace: getDnpDisqualificationRace(driver),
-    }))
-    .filter((item) => {
-      // resta nel workbench della gara in cui avviene/si vede la DSQ
-      return item.disqualificationRace != null && currentRace <= item.disqualificationRace
-    })
-
   const keysToRemove = new Set(
     driversToRemoveAfterDsq.map((driver) =>
       normalizeDriverNameForChampionship(driver.pilota)
     )
   )
 
-  // 1) Rimuove dal cassetto ufficiale: effetto dai round successivi
   setDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
@@ -10085,38 +10112,6 @@ function removeDsqDriversFromDrawer() {
       next[league] = next[league].filter(
         (pilot) => !keysToRemove.has(normalizeDriverNameForChampionship(pilot))
       )
-    }
-
-    return next
-  })
-
-  // 2) Mantiene però i DSQ nel workbench della gara corrente
-  // così la tabella estratta / PNG non cambia retroattivamente
-  setWorkbenchDriverLeagueMap((prev) => {
-    const next = cloneDriverLeagueMap(prev)
-
-    for (const item of driversToKeepInCurrentRace) {
-      const key = normalizeDriverNameForChampionship(item.pilota)
-
-      const alreadyInWorkbench = CHAMPIONSHIP_LEAGUES.some((league) =>
-        (next[league] || []).some(
-          (pilot) => normalizeDriverNameForChampionship(pilot) === key
-        )
-      )
-
-      if (!alreadyInWorkbench) {
-        next[item.league].push(item.pilota)
-      }
-    }
-
-    for (const league of CHAMPIONSHIP_LEAGUES) {
-      next[league] = next[league]
-        .filter(Boolean)
-        .filter((pilot, index, arr) => {
-          const norm = normalizeDriverNameForChampionship(pilot)
-          return arr.findIndex((p) => normalizeDriverNameForChampionship(p) === norm) === index
-        })
-        .sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" }))
     }
 
     return next
