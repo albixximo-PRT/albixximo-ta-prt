@@ -9067,47 +9067,60 @@ try {
 </div>
   <div class="shell">
     <div class="hero">
-      <div class="hero-top">
-        <div class="hero-title-wrap">
-          <div class="hero-badge">PRT Season 2K26</div>
-          <div class="hero-title">Portale Classifiche Generali</div>
-          <div class="hero-subtitle">
-            Seleziona una lega per aprire la relativa classifica generale HTML già salvata.
-          </div>
-        </div>
-
-        <div class="hero-logo">
-          ${logoDataUrl ? `<img src="${logoDataUrl}" alt="PRT Logo" />` : ""}
-        </div>
+  <div class="hero-top">
+    <div class="hero-title-wrap">
+      <div class="hero-badge">PRT Season 2K26</div>
+      <div class="hero-title">Portale Classifiche PRT</div>
+      <div class="hero-subtitle">
+        Seleziona dai pannelli sottostanti la classifica assoluta di lega oppure la classifica della singola gara.
       </div>
+    </div>
 
-      <div class="tabs" id="tabs">
-        ${tabsHtml}
-      </div>
-      <div class="race-png-panel">
+    <div class="hero-logo">
+      ${logoDataUrl ? `<img src="${logoDataUrl}" alt="PRT Logo" />` : ""}
+    </div>
+  </div>
+</div>
+
+<div class="race-png-panel">
+  <div>
+    <div class="race-png-title">Classifiche Assolute S2K26</div>
+    <div style="font-size:12px; opacity:0.72; margin-top:4px;">
+      Seleziona una lega per aprire la relativa classifica assoluta.
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    ${tabsHtml}
+  </div>
+</div>
+
+<div class="race-png-panel">
   <div class="race-png-head">
     <div>
       <div class="race-png-title">Classifiche Gara — seleziona Gara da 1 a 13 per Lega</div>
       <div style="font-size:12px; opacity:0.72; margin-top:4px;">
-        Le immagini vengono caricate solo al click.
+        Seleziona una gara e poi scegli la lega da visualizzare.
       </div>
     </div>
 
-    <select class="race-png-select" id="racePngSelect">
-      <option value="1">Gara 1</option>
-      <option value="2">Gara 2</option>
-      <option value="3">Gara 3</option>
-      <option value="4">Gara 4</option>
-      <option value="5">Gara 5</option>
-      <option value="6">Gara 6</option>
-      <option value="7">Gara 7</option>
-      <option value="8">Gara 8</option>
-      <option value="9">Gara 9</option>
-      <option value="10">Gara 10</option>
-      <option value="11">Gara 11</option>
-      <option value="12">Gara 12</option>
-      <option value="13">Gara 13</option>
-    </select>
+    <div style="display:flex; justify-content:flex-start;">
+      <select class="race-png-select" id="racePngSelect">
+        <option value="1">Gara 1</option>
+        <option value="2">Gara 2</option>
+        <option value="3">Gara 3</option>
+        <option value="4">Gara 4</option>
+        <option value="5">Gara 5</option>
+        <option value="6">Gara 6</option>
+        <option value="7">Gara 7</option>
+        <option value="8">Gara 8</option>
+        <option value="9">Gara 9</option>
+        <option value="10">Gara 10</option>
+        <option value="11">Gara 11</option>
+        <option value="12">Gara 12</option>
+        <option value="13">Gara 13</option>
+      </select>
+    </div>
   </div>
 
   <div class="race-png-tabs" id="racePngTabs"></div>
@@ -9116,7 +9129,6 @@ try {
     <img id="racePngImage" src="" alt="Classifica gara" />
   </div>
 </div>
-    </div>
 
     <div class="viewer-shell">
       <div class="booting-panel" id="bootingPanel">
