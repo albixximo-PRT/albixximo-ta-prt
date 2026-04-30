@@ -8270,10 +8270,17 @@ try {
 }
 
 .race-png-title {
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 900;
-  letter-spacing: 0.45px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
+  line-height: 1.1;
+
+  color: white;
+
+  text-shadow:
+    0 0 10px rgba(255,215,0,0.35),
+    0 0 18px rgba(160,90,255,0.25);
 }
 
 .race-png-select {
@@ -8308,6 +8315,16 @@ try {
   height: auto;
   display: block;
   border-radius: 14px;
+}
+
+.race-png-viewer.loading::before {
+  content: "Caricamento...";
+  display: block;
+  text-align: center;
+  font-weight: 900;
+  letter-spacing: 1px;
+  padding: 40px 0;
+  opacity: 0.7;
 }
 
 .tab-btn {
@@ -8381,6 +8398,27 @@ try {
       box-shadow: none;
     }
 
+    .tab-btn.active-loading {
+  background: rgba(255,215,0,0.18);
+  border-color: rgba(255,215,0,0.45);
+  box-shadow: 0 0 18px rgba(255,215,0,0.18);
+}
+
+.tab-btn.active-loading::after {
+  content: " ⏳";
+  animation: blink 1s infinite;
+}
+
+.tab-btn.active-ready {
+  background: linear-gradient(180deg, rgba(34,197,94,0.18), rgba(34,197,94,0.10));
+  border-color: rgba(34,197,94,0.45);
+}
+
+@keyframes blink {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
     .viewer-shell {
   border-radius: 22px;
   border: 1px solid rgba(255,255,255,0.10);
@@ -8400,35 +8438,47 @@ try {
     }
 
     .home-card {
-      width: 100%;
-      max-width: 980px;
-      border-radius: 24px;
-      border: 1px solid rgba(255,255,255,0.10);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-      box-shadow: 0 12px 40px rgba(0,0,0,0.30);
-      padding: 28px;
-      display: grid;
-      gap: 18px;
-      justify-items: center;
-      text-align: center;
-    }
+  width: 100%;
+  max-width: 680px; /* più stretta */
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+  box-shadow: 0 10px 30px rgba(0,0,0,0.30);
+
+  padding: 20px; /* meno spazio */
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  text-align: center;
+}
 
     .home-card img {
-      max-width: 100%;
-      height: auto;
-      max-height: 220px;
-      filter:
-        drop-shadow(0 0 18px rgba(255,215,0,0.40))
-        drop-shadow(0 0 28px rgba(255,215,0,0.18));
-    }
+  max-width: 100%;
+  height: auto;
+  max-height: 140px; /* prima era ~220 */
+  filter:
+    drop-shadow(0 0 14px rgba(255,215,0,0.35))
+    drop-shadow(0 0 22px rgba(255,215,0,0.18));
+}
 
     .home-card-title {
-      font-size: 28px;
-      font-weight: 900;
-      letter-spacing: 0.35px;
-      text-transform: uppercase;
-    }
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  line-height: 1.2;
+
+  text-shadow:
+    0 0 10px rgba(255,215,0,0.25),
+    0 0 18px rgba(160,90,255,0.18);
+}
+
+     .home-card.fade-out {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 1.6s ease, transform 0.8s ease;
+}
 
     .home-card-text {
       font-size: 14px;
@@ -9097,15 +9147,14 @@ try {
 
 <div class="race-png-panel">
   <div class="race-png-head">
-    <div>
-      <div class="race-png-title">Classifiche Gara — seleziona Gara da 1 a 13 per Lega</div>
-      <div style="font-size:12px; opacity:0.72; margin-top:4px;">
-        Seleziona una gara e poi scegli la lega da visualizzare.
-      </div>
+  <div class="race-png-title">Classifiche Gara</div>
+
+  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:6px;">
+    <div style="font-size:13px; opacity:0.82; font-weight:700;">
+      Seleziona Gara (1–13)
     </div>
 
-    <div style="display:flex; justify-content:flex-start;">
-      <select class="race-png-select" id="racePngSelect">
+    <select class="race-png-select" id="racePngSelect">
         <option value="1">Gara 1</option>
         <option value="2">Gara 2</option>
         <option value="3">Gara 3</option>
@@ -9160,11 +9209,7 @@ try {
       <div class="home-panel" id="homePanel" style="display:none;">
         <div class="home-card">
           ${logoDataUrl ? `<img src="${logoDataUrl}" alt="PRT Logo" />` : ""}
-          <div class="home-card-title">Adesso puoi selezionare una lega</div>
-          <div class="home-card-text">
-            Questo portale contiene le classifiche generali HTML delle leghe salvate.
-            Premi uno dei tab in alto per aprire la pagina della lega corrispondente.
-          </div>
+          <div class="home-card-title">ADESSO PUOI SELEZIONARE UNA LEGA</div>
         </div>
       </div>
 
@@ -9215,13 +9260,51 @@ function renderRacePngTabs() {
 }
 
 function openRacePng(league) {
-  if (!racePngImage || !racePngViewer) return;
+  if (!racePngImage || !racePngViewer || !racePngTabs) return;
 
   const src = "/Gare/G" + selectedRacePng + "/" + league + ".png";
 
-  racePngImage.src = src;
+  const allTabs = racePngTabs.querySelectorAll("button");
+
+  allTabs.forEach(function(btn) {
+    btn.classList.remove("active-loading", "active-ready");
+  });
+
+  const activeBtn = Array.from(allTabs).find(function(btn) {
+    return btn.textContent.includes(league);
+  });
+
+  if (activeBtn) {
+    activeBtn.classList.add("active-loading");
+  }
+
+  racePngImage.src = "";
   racePngImage.alt = "Classifica Gara " + selectedRacePng + " " + league;
+
   racePngViewer.classList.add("visible");
+  racePngViewer.classList.add("loading");
+
+  const img = new Image();
+
+  img.onload = function() {
+    racePngImage.src = src;
+    racePngViewer.classList.remove("loading");
+
+    if (activeBtn) {
+      activeBtn.classList.remove("active-loading");
+      activeBtn.classList.add("active-ready");
+    }
+  };
+
+  img.onerror = function() {
+    racePngViewer.classList.remove("loading");
+
+    if (activeBtn) {
+      activeBtn.classList.remove("active-loading");
+    }
+  };
+
+  img.src = src;
 
   if (bootingPanel) bootingPanel.style.display = "none";
   if (homePanel) homePanel.style.display = "none";
@@ -9235,7 +9318,10 @@ if (racePngSelect) {
     renderRacePngTabs();
 
     if (racePngImage) racePngImage.src = "";
-    if (racePngViewer) racePngViewer.classList.remove("visible");
+    if (racePngViewer) {
+  racePngViewer.classList.remove("visible");
+  racePngViewer.classList.remove("loading");
+}
   });
 }
 
@@ -9253,13 +9339,26 @@ renderRacePngTabs();
     }
 
     function finishBoot() {
-      if (bootingPanel) {
-        bootingPanel.style.display = "none";
-      }
-      if (homePanel && !activeLeague) {
-        homePanel.style.display = "grid";
-      }
+  if (bootingPanel) {
+    bootingPanel.style.display = "none";
+  }
+
+  if (homePanel && !activeLeague) {
+    homePanel.style.display = "grid";
+
+    const card = homePanel.querySelector(".home-card");
+
+    if (card) {
+      setTimeout(() => {
+        card.classList.add("fade-out");
+
+        setTimeout(() => {
+          homePanel.style.display = "none";
+        }, 1600); // durata animazione
+      }, 3000); // 3 secondi visibile
     }
+  }
+}
 
     function renderLeagueMovements(league) {
   if (!movementsWrap) return;
