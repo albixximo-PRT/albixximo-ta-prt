@@ -8252,6 +8252,64 @@ try {
   width: 100%;
 }
 
+.race-png-panel {
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.22);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.race-png-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.race-png-title {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+}
+
+.race-png-select {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.28);
+  color: white;
+  font-weight: 900;
+}
+
+.race-png-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.race-png-viewer {
+  display: none;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.30);
+}
+
+.race-png-viewer.visible {
+  display: block;
+}
+
+.race-png-viewer img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 14px;
+}
+
 .tab-btn {
   appearance: none;
   border: none;
@@ -9026,6 +9084,38 @@ try {
       <div class="tabs" id="tabs">
         ${tabsHtml}
       </div>
+      <div class="race-png-panel">
+  <div class="race-png-head">
+    <div>
+      <div class="race-png-title">Classifiche Gara — seleziona Gara da 1 a 13 per Lega</div>
+      <div style="font-size:12px; opacity:0.72; margin-top:4px;">
+        Le immagini vengono caricate solo al click.
+      </div>
+    </div>
+
+    <select class="race-png-select" id="racePngSelect">
+      <option value="1">Gara 1</option>
+      <option value="2">Gara 2</option>
+      <option value="3">Gara 3</option>
+      <option value="4">Gara 4</option>
+      <option value="5">Gara 5</option>
+      <option value="6">Gara 6</option>
+      <option value="7">Gara 7</option>
+      <option value="8">Gara 8</option>
+      <option value="9">Gara 9</option>
+      <option value="10">Gara 10</option>
+      <option value="11">Gara 11</option>
+      <option value="12">Gara 12</option>
+      <option value="13">Gara 13</option>
+    </select>
+  </div>
+
+  <div class="race-png-tabs" id="racePngTabs"></div>
+
+  <div class="race-png-viewer" id="racePngViewer">
+    <img id="racePngImage" src="" alt="Classifica gara" />
+  </div>
+</div>
     </div>
 
     <div class="viewer-shell">
@@ -9086,6 +9176,58 @@ try {
     const iframeWrap = document.getElementById("iframeWrap");
     const movementsWrap = document.getElementById("movementsWrap");
     const bootingPanel = document.getElementById("bootingPanel");
+    const racePngSelect = document.getElementById("racePngSelect");
+const racePngTabs = document.getElementById("racePngTabs");
+const racePngViewer = document.getElementById("racePngViewer");
+const racePngImage = document.getElementById("racePngImage");
+
+let selectedRacePng = "4";
+
+function renderRacePngTabs() {
+  if (!racePngTabs) return;
+
+  racePngTabs.innerHTML = "";
+
+  orderedLeagues.forEach(function(league) {
+    const btn = document.createElement("button");
+    btn.className = "tab-btn saved preloaded";
+    btn.type = "button";
+    btn.textContent = league + " G" + selectedRacePng;
+
+    btn.addEventListener("click", function() {
+      openRacePng(league);
+    });
+
+    racePngTabs.appendChild(btn);
+  });
+}
+
+function openRacePng(league) {
+  if (!racePngImage || !racePngViewer) return;
+
+  const src = "/Gare/G" + selectedRacePng + "/" + league + ".png";
+
+  racePngImage.src = src;
+  racePngImage.alt = "Classifica Gara " + selectedRacePng + " " + league;
+  racePngViewer.classList.add("visible");
+
+  if (bootingPanel) bootingPanel.style.display = "none";
+  if (homePanel) homePanel.style.display = "none";
+}
+
+if (racePngSelect) {
+  racePngSelect.value = selectedRacePng;
+
+  racePngSelect.addEventListener("change", function() {
+    selectedRacePng = racePngSelect.value;
+    renderRacePngTabs();
+
+    if (racePngImage) racePngImage.src = "";
+    if (racePngViewer) racePngViewer.classList.remove("visible");
+  });
+}
+
+renderRacePngTabs();
 
     let activeLeague = null;
 
