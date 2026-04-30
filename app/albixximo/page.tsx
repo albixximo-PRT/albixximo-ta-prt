@@ -3485,6 +3485,7 @@ const [manualQualiOverrides, setManualQualiOverrides] = useState<Record<number, 
 const [manualQualiDraft, setManualQualiDraft] = useState<Record<number, string>>({})
 const [showMovementCreatedModal, setShowMovementCreatedModal] = useState(false)
 const [showApplyMovementsModal, setShowApplyMovementsModal] = useState(false)
+const [showRemoveDsqDriversModal, setShowRemoveDsqDriversModal] = useState(false)
 const [lastCreatedMovement, setLastCreatedMovement] = useState<LeagueMovementEntry | null>(null)
 const [showApplyLastMovementModal, setShowApplyLastMovementModal] = useState(false)
 
@@ -7648,6 +7649,23 @@ const driverChampionshipByLeague = useMemo(() => {
   }
 }, [driverChampionship])
 
+const driversToRemoveAfterDsq = useMemo(() => {
+  return driverChampionship.filter((driver) => {
+    let dnpOrDsqCount = 0
+
+    for (let raceNumber = 1; raceNumber <= 13; raceNumber++) {
+      const cell = driver.raceResults[raceNumber]
+      if (!cell) continue
+
+      if (cell.status === "DNP" || cell.status === "DSQ") {
+        dnpOrDsqCount += 1
+      }
+    }
+
+    return dnpOrDsqCount >= 4
+  })
+}, [driverChampionship])
+
 
 
 async function performExportTablePng() {
@@ -9728,6 +9746,34 @@ function removePilotFromLeagueDrawer(league: ChampionshipLeagueKey, pilotName: s
     next[league] = next[league].filter(
       (pilot) => normalizeDriverNameForChampionship(pilot) !== target
     )
+
+    return next
+  })
+}
+
+function removeDsqDriversFromDrawer() {
+  if (driversToRemoveAfterDsq.length === 0) return
+
+  const keysToRemove = new Set(
+    driversToRemoveAfterDsq.map((driver) =>
+      normalizeDriverNameForChampionship(driver.pilota)
+    )
+  )
+
+  setDriverLeagueMap((prev) => {
+    const next: DriverLeagueMap = {
+      ELITE: [...prev.ELITE],
+      PLATINUM: [...prev.PLATINUM],
+      MASTER: [...prev.MASTER],
+      PRO: [...prev.PRO],
+      GT: [...prev.GT],
+    }
+
+    for (const league of CHAMPIONSHIP_LEAGUES) {
+      next[league] = next[league].filter(
+        (pilot) => !keysToRemove.has(normalizeDriverNameForChampionship(pilot))
+      )
+    }
 
     return next
   })
@@ -11846,6 +11892,28 @@ const lastCreatedMovementText = useMemo(() => {
         )} piloti totali
       </div>
 
+      {driversToRemoveAfterDsq.length > 0 && (
+  <button
+    onClick={(e) => {
+      e.stopPropagation()
+      setShowRemoveDsqDriversModal(true)
+    }}
+    style={{
+      padding: "8px 12px",
+      borderRadius: 12,
+      border: "1px solid rgba(239,68,68,0.35)",
+      background: "rgba(239,68,68,0.16)",
+      color: "white",
+      cursor: "pointer",
+      fontWeight: 900,
+      fontSize: 12,
+      textTransform: "uppercase",
+    }}
+  >
+    Rimuovi DSQ dal cassetto
+  </button>
+)}
+
       <div
         style={{
           width: 36,
@@ -13105,6 +13173,116 @@ const lastCreatedMovementText = useMemo(() => {
           }}
         >
           Conferma reset
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+      {showRemoveDsqDriversModal && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,0.72)",
+      backdropFilter: "blur(6px)",
+      display: "grid",
+      placeItems: "center",
+      zIndex: 9999,
+      padding: 20,
+    }}
+  >
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 560,
+        borderRadius: 22,
+        border: "1px solid rgba(255,255,255,0.12)",
+        background:
+          "linear-gradient(180deg, rgba(18,22,31,0.98), rgba(8,10,15,0.98))",
+        boxShadow: "0 20px 80px rgba(0,0,0,0.55)",
+        padding: 20,
+        display: "grid",
+        gap: 16,
+      }}
+    >
+      <div>
+        <div style={{ fontSize: 20, fontWeight: 900 }}>
+          Rimuovere piloti DSQ dal cassetto?
+        </div>
+
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 13,
+            opacity: 0.78,
+            lineHeight: 1.45,
+          }}
+        >
+          Questi piloti hanno raggiunto il 4° DNP/DSQ in classifica generale e
+          verranno rimossi dal cassetto piloti:
+        </div>
+
+        <div
+          style={{
+            marginTop: 12,
+            display: "grid",
+            gap: 6,
+            fontSize: 13,
+            fontWeight: 800,
+          }}
+        >
+          {driversToRemoveAfterDsq.map((driver) => (
+            <div key={driver.pilota}>
+              • {driver.pilota} — {driver.league}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <button
+          onClick={() => setShowRemoveDsqDriversModal(false)}
+          style={{
+            padding: "12px 16px",
+            borderRadius: 14,
+            border: "1px solid rgba(255,255,255,0.14)",
+            background: "rgba(255,255,255,0.06)",
+            color: "white",
+            cursor: "pointer",
+            fontWeight: 900,
+            textTransform: "uppercase",
+            letterSpacing: 0.5,
+          }}
+        >
+          Annulla
+        </button>
+
+        <button
+          onClick={() => {
+            removeDsqDriversFromDrawer()
+            setShowRemoveDsqDriversModal(false)
+          }}
+          style={{
+            padding: "12px 16px",
+            borderRadius: 14,
+            border: "1px solid rgba(239,68,68,0.35)",
+            background: "rgba(239,68,68,0.20)",
+            color: "white",
+            cursor: "pointer",
+            fontWeight: 900,
+            textTransform: "uppercase",
+            letterSpacing: 0.5,
+          }}
+        >
+          Conferma rimozione
         </button>
       </div>
     </div>
