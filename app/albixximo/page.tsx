@@ -9206,7 +9206,7 @@ try {
         </div>
       </div>
 
-      <div class="home-panel" id="homePanel" style="display:none;">
+      <div class="home-panel" id="homePanel" style="display:grid;">
         <div class="home-card">
           ${logoDataUrl ? `<img src="${logoDataUrl}" alt="PRT Logo" />` : ""}
           <div class="home-card-title">ADESSO PUOI SELEZIONARE UNA LEGA</div>
@@ -9354,8 +9354,8 @@ renderRacePngTabs();
 
         setTimeout(() => {
           homePanel.style.display = "none";
-        }, 1600); // durata animazione
-      }, 3000); // 3 secondi visibile
+        }, 1600);
+      }, 3000);
     }
   }
 }
@@ -9529,19 +9529,7 @@ renderLeagueMovements(league);
 
     renderTabs();
 
-        renderTabs();
-
-    if (window.requestAnimationFrame) {
-      window.requestAnimationFrame(function() {
-        window.requestAnimationFrame(function() {
-          finishBoot();
-        });
-      });
-    } else {
-      setTimeout(finishBoot, 80);
-    }
-
-    // SPLASH SCREEN
+// SPLASH SCREEN
 
 const splashDots = document.getElementById("splashDots");
 
@@ -9561,6 +9549,10 @@ animateDots();
 setTimeout(() => {
   const splash = document.getElementById("splashScreen");
   if (splash) splash.style.display = "none";
+
+  // 👇 AVVIA QUI la home
+  finishBoot();
+
 }, 8000);
   </script>
 </body>
