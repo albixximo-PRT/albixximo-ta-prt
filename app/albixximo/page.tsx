@@ -1111,7 +1111,10 @@ function Pill({
         letterSpacing: 0.6,
         textTransform: "uppercase",
         whiteSpace: "nowrap",
-        color: "rgba(0,0,0,0.92)",
+        color:
+  variant === "dsq" || variant === "fuchsia"
+    ? "#ffffff"
+    : "rgba(0,0,0,0.92)",
         ...styles[variant],
       }}
     >
@@ -2091,9 +2094,11 @@ function renderPrtQualifyingCell({
   const tempo = String(row.tempoTotaleGara || "").toUpperCase()
 
   const isDnp =
-    distacco === "DNP" ||
-    tempo === "DNP" ||
-    tempo === "DNS"
+  distacco === "DNP" ||
+  tempo === "DNP" ||
+  tempo === "DNS" ||
+  distacco === "DSQ" ||
+  tempo === "DSQ"
 
   // 👉 DNP: cella vuota
   if (isDnp) {
@@ -3165,7 +3170,13 @@ const compactStatusPills = exporting && exportStatusPillCount > 2
             {previewRows.map((r, i) => {
               const tempo = tempoLikeGt7(r)
               const isDsqRow = (r.tempoTotaleGara || "").trim().toUpperCase() === "DSQ"
-              const rowStyle = getPrtTableRowStyle(r.posGara, i, isDsqRow)
+const isRecoveredDsqRow = isDsqRow && r.sourcePosGara >= 9000
+
+const rowStyle = getPrtTableRowStyle(
+  r.posGara,
+  i,
+  isDsqRow && !isRecoveredDsqRow
+)
 
               return (
                 <tr
