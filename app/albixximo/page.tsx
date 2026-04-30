@@ -2245,11 +2245,12 @@ function renderPrtPenaltyCell({
   const penaltyEntries = penalties[key] || []
   const penaltyMain = getPenaltyMainDisplay(penaltyEntries)
   const isDsqRow = (row.tempoTotaleGara || "").trim().toUpperCase() === "DSQ"
-  const showPenaltyDetail = !(exporting && unionMode)
+const isRecoveredDsqRow = row.sourcePosGara >= 9000
+const showPenaltyDetail = !(exporting && unionMode)
 
-  if (isDsqRow || penaltyMain.kind === "dsq") {
-    return <Pill left="DSQ" variant="dsq" />
-  }
+if (isDsqRow || isRecoveredDsqRow || penaltyMain.kind === "dsq") {
+  return <Pill left="DSQ" variant="dsq" />
+}
 
   if (penaltyEntries.length === 0) {
     return "-"
