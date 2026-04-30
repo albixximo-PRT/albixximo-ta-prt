@@ -9972,26 +9972,26 @@ function confirmSaveCurrentLeague() {
     normalizeLeagueKey(effectiveLega) || selectedLeague
 
   const snapshot: SavedLeagueSnapshot = {
-    savedAt: new Date().toISOString(),
-    league: saveLeagueKey,
-    raceNumber: currentRace,
-    csv: finalCsv,
-    rows,
-    finalRows,
-    unionMeta,
-    penalties,
-    lapOverrides,
-    dnfOverrides,
-    manualGaraOverride,
-    manualLegaOverride,
-    manualPilotOverrides,
-    manualAutoOverrides,
-    manualDistaccoOverrides,
-    manualQualiOverrides,
-    bestQuali,
-    bestRaceLap,
-    winner,
-  }
+  savedAt: new Date().toISOString(),
+  league: saveLeagueKey,
+  raceNumber: currentRace,
+  csv: finalCsv,
+  rows,
+  finalRows: finalRowsWithDnp,
+  unionMeta,
+  penalties,
+  lapOverrides,
+  dnfOverrides,
+  manualGaraOverride,
+  manualLegaOverride,
+  manualPilotOverrides,
+  manualAutoOverrides,
+  manualDistaccoOverrides,
+  manualQualiOverrides,
+  bestQuali,
+  bestRaceLap,
+  winner,
+}
 
   setChampionshipState((prev) => {
     const prevRace = prev.races[currentRace] || {}
