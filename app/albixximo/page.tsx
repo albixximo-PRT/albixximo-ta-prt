@@ -4123,6 +4123,25 @@ function applyFourthDnpAsDsqRule(driver: DriverChampionshipRow) {
   }
 }
 
+function getDnpDisqualificationRace(driver: DriverChampionshipRow): number | null {
+  let dnpOrDsqCount = 0
+
+  for (let raceNumber = 1; raceNumber <= 13; raceNumber++) {
+    const cell = driver.raceResults[raceNumber]
+    if (!cell) continue
+
+    if (cell.status === "DNP" || cell.status === "DSQ") {
+      dnpOrDsqCount += 1
+
+      if (dnpOrDsqCount >= 4) {
+        return raceNumber
+      }
+    }
+  }
+
+  return null
+}
+
 function RaceCellStars({ pp, gv }: { pp: boolean; gv: boolean }) {
   if (!pp && !gv) return null
 
@@ -7623,8 +7642,17 @@ for (const movementRound of [3, 6, 9, 12]) {
 }
  for (const driver of map.values()) {
   applyFourthDnpAsDsqRule(driver)
-} 
-return Array.from(map.values()).sort((a, b) => {
+}
+
+return Array.from(map.values())
+  .filter((driver) => {
+    const disqualificationRace = getDnpDisqualificationRace(driver)
+
+    if (disqualificationRace == null) return true
+
+    return currentRace <= disqualificationRace
+  })
+  .sort((a, b) => {
     if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints
     return a.pilota.localeCompare(b.pilota, "it", { sensitivity: "base" })
   })
