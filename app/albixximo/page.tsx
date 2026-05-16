@@ -698,10 +698,10 @@ function findBestOfficialPilotMatch(
   const exact = raw === best.normalized
   const rawContained = best.normalized.includes(raw) || raw.includes(best.normalized)
 
-  let minScore = 0.88
-  if (raw.length >= 8) minScore = 0.80
-  else if (raw.length >= 5) minScore = 0.85
-  else minScore = 0.93
+  let minScore = 0.92
+if (raw.length >= 8) minScore = 0.90
+else if (raw.length >= 5) minScore = 0.92
+else minScore = 0.95
 
   if (rawContained && raw.length >= 5) {
     minScore = Math.min(minScore, 0.90)
