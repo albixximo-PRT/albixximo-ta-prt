@@ -1672,10 +1672,13 @@ for (const q of qualiRows) {
     const qualiByPos = qualiByPosTimesOnly.size > 0 ? qualiByPosTimesOnly : qualiByPosAll
 
     const outBase: ExtractRow[] = raceRows.map((r) => {
-  const k = r.pilota ? pilotKey(r.pilota) : ""
+  const racePilotAlias = normalizePrtQualiPilotAlias(r.pilota)
+  const k = racePilotAlias ? pilotKey(racePilotAlias) : ""
 
   const qExact = k ? qualiByPilot.get(k) : undefined
-const qLoose = !qExact && r.pilota ? findQualiByPilotLoose(r.pilota, qualiRows) : undefined
+  const qLoose = !qExact && r.pilota
+    ? findQualiByPilotLoose(racePilotAlias, qualiRows)
+    : undefined
 
 const tempoQualifica =
   normalizeTimeText((qExact?.tempo ?? "").trim()) ||
