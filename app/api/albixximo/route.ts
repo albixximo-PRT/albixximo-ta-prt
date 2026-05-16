@@ -410,6 +410,13 @@ function looksLikeKnownCarToken(s: string) {
     t.includes("gr010") ||
     t.includes("r18") ||
     t.includes("908 hdi") ||
+        t.includes("gr.b") ||
+    t.includes("grb") ||
+    t.includes("rally car") ||
+    t.includes("rcz") ||
+    t.includes("lancer evolution") ||
+    t.includes("wrx") ||
+    t.includes("focus") ||
     t.includes("gr.4") ||
     t.includes("gr4") ||
     t.includes("gt4") ||
@@ -889,8 +896,13 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
     )
   }
 
-  const hasId = (s: string) =>
-    /\(\d{3}\)/.test(s) || /'\d{2}\b/.test(s) || /\b\d{2}\b/.test(s) || /\bGr\.?4\b/i.test(s)
+    const hasId = (s: string) =>
+    /\(\d{3}\)/.test(s) ||
+    /'\d{2}\b/.test(s) ||
+    /\b\d{2}\b/.test(s) ||
+    /\bGr\.?4\b/i.test(s) ||
+    /\bGr\.?B\b/i.test(s) ||
+    /Rally\s+Car/i.test(s)
 
   const isCompleteCar = (s: string) => looksLikeModel(s) && hasId(s)
 
