@@ -272,8 +272,6 @@ function normalizePilot(s: string) {
     .replace(/\bSenpai__ZeN_\b/gi, "Senpai_ZeN_")
     .replace(/\bM__Apex\b/gi, "M_ApeX_")
     .replace(/\bGrollo_?78\b/gi, "Grollo78")
-        .replace(/\bFocuss\b/gi, "Focuss")
-    .replace(/\bDenni\b/gi, "Denni")
     .replace(/\bZzic3Fr0St--\b/gi, "ZzIc3Fr0St-_-")
     .replace(/\bmani\b/gi, "Grollo78")
 
@@ -578,7 +576,7 @@ function parseQualificaFromColumnText(rawText: string): QualiRow[] {
     if (t.includes(":")) return false
     if (/^[\-\.\s]+$/.test(t)) return false
     if (/DISTACCO|MIGLIOR|GRAN|UNION|Dragon|Chiudi|Avanti|Alterna|Blue Moon|Speedway|Interno/i.test(t)) return false
-    if (looksLikeKnownCarToken(t) && !/^Denni$/i.test(t)) return false
+    if (looksLikeKnownCarToken(t)) return false
 
     return /[A-Za-z]/.test(t)
   }
@@ -1280,19 +1278,44 @@ function levenshtein(a: string, b: string) {
   return dp[m][n]
 }
 
+const PRT_QUALI_PILOT_ALIASES: Record<string, string> = {
+  Denni: "Extremeden",
+  Focuss: "JM_focuss_71",
+  PRT_MaxLukex: "MaxLukex",
+  M_ApeX: "M_Apex__",
+  "G. Bozzo": "Olly_oli",
+  Rekkiaspeed: "Rekkia-Speed",
+  astrorock285: "astrorock2858",
+}
+
+function normalizePrtQualiPilotAlias(name: string) {
+  const raw = String(name || "").trim()
+  if (!raw) return ""
+
+  const exact = PRT_QUALI_PILOT_ALIASES[raw]
+  if (exact) return exact
+
+  const loose = normalizePilotLoose(raw)
+  const found = Object.entries(PRT_QUALI_PILOT_ALIASES).find(
+    ([from]) => normalizePilotLoose(from) === loose
+  )
+
+  return found ? found[1] : raw
+}
+
 function findQualiByPilotLoose(pilota: string, rows: QualiRow[]) {
-  const target = normalizePilotLoose(pilota)
+  const target = normalizePilotLoose(normalizePrtQualiPilotAlias(pilota))
   if (!target) return undefined
 
   for (const q of rows) {
-    if (betterPilotMatch(q.pilota, pilota)) return q
+    if (betterPilotMatch(normalizePrtQualiPilotAlias(q.pilota), normalizePrtQualiPilotAlias(pilota))) return q
   }
 
   let best: QualiRow | undefined
   let bestScore = Infinity
 
   for (const q of rows) {
-    const cand = normalizePilotLoose(q.pilota)
+    const cand = normalizePilotLoose(normalizePrtQualiPilotAlias(q.pilota))
     if (!cand) continue
 
     if (cand.includes(target) || target.includes(cand)) {
