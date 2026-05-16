@@ -343,6 +343,13 @@ const KNOWN_CARS = [
   "GR010 HYBRID '21",
   "R18 '16",
   "908 HDi FAP '10",
+  "RCZ Gr.B Rally Car",
+  "Lancer Evolution Final Gr.B Rally Car",
+  "WRX Gr.B Rally Car",
+  "Focus Gr.B Rally Car",
+  "GT-R Gr.B Rally Car",
+  "NSX Gr.B Rally Car",
+  "86 Gr.B Rally Car",
 ]
 
 function normalizeCarLoose(s: string) {
