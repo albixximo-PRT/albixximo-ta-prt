@@ -1647,10 +1647,16 @@ export async function POST(req: NextRequest) {
     }
 
     const qualiByPilot = new Map<string, QualiRow>()
-    for (const q of qualiRows) {
-      if (!q.pilota) continue
-      qualiByPilot.set(pilotKey(q.pilota), q)
-    }
+for (const q of qualiRows) {
+  if (!q.pilota) continue
+
+  qualiByPilot.set(pilotKey(q.pilota), q)
+
+  const aliasName = normalizePrtQualiPilotAlias(q.pilota)
+  if (aliasName && aliasName !== q.pilota) {
+    qualiByPilot.set(pilotKey(aliasName), q)
+  }
+}
 
     const qualiByPosDirect = new Map<number, QualiRow>()
     for (const q of qualiRows) {
