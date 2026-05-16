@@ -1278,44 +1278,19 @@ function levenshtein(a: string, b: string) {
   return dp[m][n]
 }
 
-const PRT_QUALI_PILOT_ALIASES: Record<string, string> = {
-  Denni: "Extremeden",
-  Focuss: "JM_focuss_71",
-  PRT_MaxLukex: "MaxLukex",
-  M_ApeX: "M_Apex__",
-  "G. Bozzo": "Olly_oli",
-  Rekkiaspeed: "Rekkia-Speed",
-  astrorock285: "astrorock2858",
-}
-
-function normalizePrtQualiPilotAlias(name: string) {
-  const raw = String(name || "").trim()
-  if (!raw) return ""
-
-  const exact = PRT_QUALI_PILOT_ALIASES[raw]
-  if (exact) return exact
-
-  const loose = normalizePilotLoose(raw)
-  const found = Object.entries(PRT_QUALI_PILOT_ALIASES).find(
-    ([from]) => normalizePilotLoose(from) === loose
-  )
-
-  return found ? found[1] : raw
-}
-
 function findQualiByPilotLoose(pilota: string, rows: QualiRow[]) {
-  const target = normalizePilotLoose(normalizePrtQualiPilotAlias(pilota))
+  const target = normalizePilotLoose(pilota)
   if (!target) return undefined
 
   for (const q of rows) {
-    if (betterPilotMatch(normalizePrtQualiPilotAlias(q.pilota), normalizePrtQualiPilotAlias(pilota))) return q
+    if (betterPilotMatch(q.pilota, pilota)) return q
   }
 
   let best: QualiRow | undefined
   let bestScore = Infinity
 
   for (const q of rows) {
-    const cand = normalizePilotLoose(normalizePrtQualiPilotAlias(q.pilota))
+    const cand = normalizePilotLoose(q.pilota)
     if (!cand) continue
 
     if (cand.includes(target) || target.includes(cand)) {
@@ -1647,16 +1622,10 @@ export async function POST(req: NextRequest) {
     }
 
     const qualiByPilot = new Map<string, QualiRow>()
-for (const q of qualiRows) {
-  if (!q.pilota) continue
-
-  qualiByPilot.set(pilotKey(q.pilota), q)
-
-  const aliasName = normalizePrtQualiPilotAlias(q.pilota)
-  if (aliasName && aliasName !== q.pilota) {
-    qualiByPilot.set(pilotKey(aliasName), q)
-  }
-}
+    for (const q of qualiRows) {
+      if (!q.pilota) continue
+      qualiByPilot.set(pilotKey(q.pilota), q)
+    }
 
     const qualiByPosDirect = new Map<number, QualiRow>()
     for (const q of qualiRows) {
@@ -1672,13 +1641,10 @@ for (const q of qualiRows) {
     const qualiByPos = qualiByPosTimesOnly.size > 0 ? qualiByPosTimesOnly : qualiByPosAll
 
     const outBase: ExtractRow[] = raceRows.map((r) => {
-  const racePilotAlias = normalizePrtQualiPilotAlias(r.pilota)
-  const k = racePilotAlias ? pilotKey(racePilotAlias) : ""
+  const k = r.pilota ? pilotKey(r.pilota) : ""
 
   const qExact = k ? qualiByPilot.get(k) : undefined
-  const qLoose = !qExact && r.pilota
-    ? findQualiByPilotLoose(racePilotAlias, qualiRows)
-    : undefined
+const qLoose = !qExact && r.pilota ? findQualiByPilotLoose(r.pilota, qualiRows) : undefined
 
 const tempoQualifica =
   normalizeTimeText((qExact?.tempo ?? "").trim()) ||

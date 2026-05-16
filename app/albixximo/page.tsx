@@ -6239,13 +6239,9 @@ function resetBaselineDraft() {
         } else {
           const bestMatch = findBestOfficialPilotMatch(resolvedPilot, officialLeaguePilots)
 
-          const forceManualMatch =
-  selectedLeague === "PLATINUM" &&
-  currentRace === 5
-
-if (bestMatch?.isSafeAutoMatch && !forceManualMatch) {
-  resolvedPilot = bestMatch.officialName
-} else if (normalizedRaw) {
+          if (bestMatch?.isSafeAutoMatch) {
+            resolvedPilot = bestMatch.officialName
+          } else if (normalizedRaw) {
             const unresolvedId = `${selectedLeague}:${normalizedRaw}`
 
             if (!dismissedUnknownDrivers[unresolvedId] && !unresolvedMap.has(unresolvedId)) {
