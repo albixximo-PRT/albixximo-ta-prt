@@ -272,6 +272,8 @@ function normalizePilot(s: string) {
     .replace(/\bSenpai__ZeN_\b/gi, "Senpai_ZeN_")
     .replace(/\bM__Apex\b/gi, "M_ApeX_")
     .replace(/\bGrollo_?78\b/gi, "Grollo78")
+        .replace(/\bFocuss\b/gi, "Focuss")
+    .replace(/\bDenni\b/gi, "Denni")
     .replace(/\bZzic3Fr0St--\b/gi, "ZzIc3Fr0St-_-")
     .replace(/\bmani\b/gi, "Grollo78")
 
@@ -576,7 +578,7 @@ function parseQualificaFromColumnText(rawText: string): QualiRow[] {
     if (t.includes(":")) return false
     if (/^[\-\.\s]+$/.test(t)) return false
     if (/DISTACCO|MIGLIOR|GRAN|UNION|Dragon|Chiudi|Avanti|Alterna|Blue Moon|Speedway|Interno/i.test(t)) return false
-    if (looksLikeKnownCarToken(t)) return false
+    if (looksLikeKnownCarToken(t) && !/^Denni$/i.test(t)) return false
 
     return /[A-Za-z]/.test(t)
   }
