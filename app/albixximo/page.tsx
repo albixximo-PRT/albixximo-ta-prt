@@ -5551,28 +5551,33 @@ function DriverRatingStars({
   const displayValue = exporting ? safeValue : (hoverValue ?? safeValue)
 
   if (isPenalty) {
-    return (
-      <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: exporting ? "5px 10px" : "4px 9px",
-          borderRadius: 999,
-          background: "rgba(239,68,68,0.92)",
-          border: "1px solid rgba(239,68,68,0.65)",
-          boxShadow: "0 0 16px rgba(239,68,68,0.28)",
-          color: "#fff",
-          fontSize: exporting ? 11 : 10,
-          fontWeight: 900,
-          textTransform: "uppercase",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {value}
-      </span>
-    )
-  }
+  return (
+    <span
+      onClick={() => {
+        if (!exporting && onChange) onChange(5)
+      }}
+      title={exporting ? undefined : "Clicca per ripristinare 5 stelle"}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: exporting ? "5px 10px" : "4px 9px",
+        borderRadius: 999,
+        background: "rgba(239,68,68,0.92)",
+        border: "1px solid rgba(239,68,68,0.65)",
+        boxShadow: "0 0 16px rgba(239,68,68,0.28)",
+        color: "#fff",
+        fontSize: exporting ? 11 : 10,
+        fontWeight: 900,
+        textTransform: "uppercase",
+        whiteSpace: "nowrap",
+        cursor: exporting ? "default" : "pointer",
+      }}
+    >
+      {value}
+    </span>
+  )
+}
 
   return (
     <div
