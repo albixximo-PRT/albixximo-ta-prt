@@ -320,6 +320,45 @@ const PENALTY_RULES: Record<string, PenaltyRule> = {
 const AMMONITION_CODES = new Set(["P01", "P25", "P31"])
 const DSQ_CODES = new Set(["P16", "P27", "P35", "DSQ"])
 
+const NEW_PENALTY_RULES: Record<string, PenaltyRule> = {
+  P01: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P02: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P03: { seconds: 10, effect: "time", shortLabel: "+10s" },
+  P04: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P05: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P06: { seconds: 25, effect: "time", shortLabel: "+25s" },
+  P07: { seconds: 30, effect: "time", shortLabel: "+30s" },
+  P08: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P09: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P10: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P11: { seconds: 0, effect: "dsq", shortLabel: "SQ CAMP." },
+  P12: { seconds: 40, effect: "time", shortLabel: "+40s" },
+  P13: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P14: { seconds: 10, effect: "time", shortLabel: "+10s" },
+  P15: { seconds: 10, effect: "time", shortLabel: "+10s" },
+  P16: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P17: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P18: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P19: { seconds: 30, effect: "time", shortLabel: "+30s" },
+  P20: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P21: { seconds: 0, effect: "other", shortLabel: "SQ QUAL." },
+  P22: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P23: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P24: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P25: { seconds: 0, effect: "dsq", shortLabel: "SQ CAMP." },
+  P26: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P27: { seconds: 60, effect: "time", shortLabel: "+60s" },
+  P28: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P29: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P30: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P31: { seconds: 0, effect: "dsq", shortLabel: "DSQ" },
+  P32: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  DSQ: { seconds: 0, effect: "dsq", shortLabel: "DSQ" },
+}
+
+const NEW_AMMONITION_CODES = new Set(["P01", "P23", "P26", "P29"])
+const NEW_DSQ_CODES = new Set(["P11", "P25", "P31", "DSQ"])
+
 function getPointsForPrtRow(r: ExtractRow, bestRaceLap: string): number {
   const basePointsMap: Record<number, number> = {
     1: 30,
@@ -518,24 +557,39 @@ function formatPenaltyOptionLabel(seconds: number): string {
   return `${mm} minuti e ${ss} secondi`
 }
 
-function getPenaltyRule(code: string): PenaltyRule {
-  return PENALTY_RULES[code] || { seconds: 0, effect: "other", shortLabel: "-" }
+function getPenaltyRulesForRace(raceNumber: number) {
+  return raceNumber >= 6 ? NEW_PENALTY_RULES : PENALTY_RULES
 }
 
-function penaltySecondsFromCode(code: string): number {
-  return getPenaltyRule(code).seconds
+function getAmmonitionCodesForRace(raceNumber: number) {
+  return raceNumber >= 6 ? NEW_AMMONITION_CODES : AMMONITION_CODES
 }
 
-function hasDsqPenalty(entries: PenaltyEntry[] = []): boolean {
-  return entries.some((entry) => DSQ_CODES.has(entry.code))
+function getDsqCodesForRace(raceNumber: number) {
+  return raceNumber >= 6 ? NEW_DSQ_CODES : DSQ_CODES
 }
 
-function hasAmmonitionPenalty(entries: PenaltyEntry[] = []): boolean {
-  return entries.some((entry) => AMMONITION_CODES.has(entry.code))
+function getPenaltyRule(code: string, raceNumber: number): PenaltyRule {
+  const rules = getPenaltyRulesForRace(raceNumber)
+  return rules[code] || { seconds: 0, effect: "other", shortLabel: "-" }
 }
 
-function totalPenaltySeconds(entries: PenaltyEntry[] = []): number {
-  return entries.reduce((sum, entry) => sum + penaltySecondsFromCode(entry.code), 0)
+function penaltySecondsFromCode(code: string, raceNumber: number): number {
+  return getPenaltyRule(code, raceNumber).seconds
+}
+
+function hasDsqPenalty(entries: PenaltyEntry[] = [], raceNumber: number): boolean {
+  const dsqCodes = getDsqCodesForRace(raceNumber)
+  return entries.some((entry) => dsqCodes.has(entry.code))
+}
+
+function hasAmmonitionPenalty(entries: PenaltyEntry[] = [], raceNumber: number): boolean {
+  const ammonitionCodes = getAmmonitionCodesForRace(raceNumber)
+  return entries.some((entry) => ammonitionCodes.has(entry.code))
+}
+
+function totalPenaltySeconds(entries: PenaltyEntry[] = [], raceNumber: number): number {
+  return entries.reduce((sum, entry) => sum + penaltySecondsFromCode(entry.code, raceNumber), 0)
 }
 
 function createPenaltyEntry(): PenaltyEntry {
@@ -556,27 +610,29 @@ function formatPenaltyDetail(entry: PenaltyEntry): string {
   return `${entry.code} ${entry.lap} ${entry.minute}:${entry.second}`
 }
 
-function getPenaltyOptionText(code: string): string {
-  const rule = getPenaltyRule(code)
+function getPenaltyOptionText(code: string, raceNumber: number): string {
+  const rule = getPenaltyRule(code, raceNumber)
 
   if (rule.effect === "ammonition") return `${code} (Ammonizione)`
-  if (rule.effect === "dsq") return `${code} (DSQ)`
-  if (rule.effect === "other") return `${code} (-)`
+  if (rule.effect === "dsq") return `${code} (${rule.shortLabel})`
+  if (rule.effect === "other") return `${code} (${rule.shortLabel})`
 
   return `${code} (${formatPenaltyOptionLabel(rule.seconds)})`
 }
 
-function getPenaltyMainDisplay(entries: PenaltyEntry[] = []): {
+function getPenaltyMainDisplay(entries: PenaltyEntry[] = [], raceNumber: number): {
   kind: "none" | "time" | "ammonition" | "dsq"
   text: string
 } {
   if (!entries.length) return { kind: "none", text: "-" }
-  if (hasDsqPenalty(entries)) return { kind: "dsq", text: "DSQ" }
+  if (hasDsqPenalty(entries, raceNumber)) return { kind: "dsq", text: "DSQ" }
 
-  const total = totalPenaltySeconds(entries)
+  const total = totalPenaltySeconds(entries, raceNumber)
   if (total > 0) return { kind: "time", text: formatPenaltyDisplay(total) }
 
-  if (hasAmmonitionPenalty(entries)) return { kind: "ammonition", text: "00:00.000" }
+  if (hasAmmonitionPenalty(entries, raceNumber)) {
+    return { kind: "ammonition", text: "00:00.000" }
+  }
 
   return { kind: "none", text: "-" }
 }
@@ -2235,6 +2291,7 @@ function renderPrtMetaCell({
 function renderPrtPenaltyCell({
   row,
   penalties,
+  raceNumber,
   exporting = false,
   unionMode,
   exportHasMultiPenalty,
@@ -2242,6 +2299,7 @@ function renderPrtPenaltyCell({
 }: {
   row: DisplayRow
   penalties: PenaltyMap
+  raceNumber: number
   exporting?: boolean
   unionMode: boolean
   exportHasMultiPenalty: boolean
@@ -2249,7 +2307,7 @@ function renderPrtPenaltyCell({
 }) {
   const key = getPrtRowStableKey(row.sourcePosGara)
   const penaltyEntries = penalties[key] || []
-  const penaltyMain = getPenaltyMainDisplay(penaltyEntries)
+  const penaltyMain = getPenaltyMainDisplay(penaltyEntries, raceNumber)
   const isDsqRow = (row.tempoTotaleGara || "").trim().toUpperCase() === "DSQ"
 const isRecoveredDsqRow = row.sourcePosGara >= 9000
 const showPenaltyDetail = !(exporting && unionMode)
@@ -2289,7 +2347,7 @@ if (isDsqRow || isRecoveredDsqRow || penaltyMain.kind === "dsq") {
 
   if (penaltyEntries.length === 1) {
     const entry = penaltyEntries[0]
-    const rule = getPenaltyRule(entry.code)
+    const rule = getPenaltyRule(entry.code, raceNumber)
 
     if (exportHasMultiPenalty) {
       return (
@@ -2598,7 +2656,7 @@ if (isDsqRow || isRecoveredDsqRow || penaltyMain.kind === "dsq") {
             )
           }
 
-          if (hasDsqPenalty(penaltyEntries)) {
+          if (hasDsqPenalty(penaltyEntries, raceNumber)) {
             return <Pill left="DSQ" variant="dsq" />
           }
 
@@ -2623,7 +2681,7 @@ if (isDsqRow || isRecoveredDsqRow || penaltyMain.kind === "dsq") {
         }}
       >
         {penaltyEntries.slice(0, 4).map((entry) => {
-          const rule = getPenaltyRule(entry.code)
+          const rule = getPenaltyRule(entry.code, raceNumber)
 
           return (
             <div
@@ -2924,6 +2982,7 @@ function ResultsTable({
   unionMode,
   exporting = false,
   penalties,
+  raceNumber,
   forceHideMeta = false,
   tableTitle = "Classifica (output)",
 }: {
@@ -2934,6 +2993,7 @@ function ResultsTable({
   unionMode: boolean
   exporting?: boolean
   penalties: PenaltyMap
+  raceNumber: number
   forceHideMeta?: boolean
   tableTitle?: string
 }) {
@@ -3272,13 +3332,14 @@ const rowStyle = getPrtTableRowStyle(
                     }}
                   >
                     {renderPrtPenaltyCell({
-                      row: r,
-                      penalties,
-                      exporting,
-                      unionMode,
-                      exportHasMultiPenalty,
-                      exportPenaltyTimeTextStyle,
-                    })}
+  row: r,
+  penalties,
+  raceNumber,
+  exporting,
+  unionMode,
+  exportHasMultiPenalty,
+  exportPenaltyTimeTextStyle,
+})}
                   </TableCell>
 
                   <TableCell
@@ -3548,20 +3609,22 @@ const normalizedGaraForOutput = useMemo(() => {
   return raw
 }, [effectiveGara])
 
-  const penaltyCodeOptions = useMemo(
-    () => [
-      { value: "DSQ", label: "DSQ (Squalifica)" },
-      ...Array.from({ length: 39 }, (_, i) => {
-        const n = i + 1
-        const code = `P${String(n).padStart(2, "0")}`
-        return {
-          value: code,
-          label: getPenaltyOptionText(code),
-        }
-      }),
-    ],
-    []
-  )
+  const penaltyCodeOptions = useMemo(() => {
+  const maxPenaltyCode = currentRace >= 6 ? 32 : 39
+
+  return [
+    { value: "DSQ", label: "DSQ (Squalifica)" },
+    ...Array.from({ length: maxPenaltyCode }, (_, i) => {
+      const n = i + 1
+      const code = `P${String(n).padStart(2, "0")}`
+
+      return {
+        value: code,
+        label: getPenaltyOptionText(code, currentRace),
+      }
+    }),
+  ]
+}, [currentRace])
 
   const lapOptions = useMemo(
     () => [
@@ -6528,7 +6591,7 @@ const presentPilotKeys = new Set(
     const upperTempo = rawTempo.trim().toUpperCase()
     const isBaseDnf = upperTempo === "DNF" || upperTempo === "DNF-I"
     const dnfValue = isBaseDnf ? dnfOverrides[key] || (upperTempo === "DNF-I" ? "DNF-I" : "DNF") : null
-        const rowHasDsqPenalty = hasDsqPenalty(penalties[key] || [])
+        const rowHasDsqPenalty = hasDsqPenalty(penalties[key] || [], currentRace)
 
         if (rowHasDsqPenalty) {
           return {
@@ -6603,7 +6666,7 @@ const presentPilotKeys = new Set(
     for (let i = 0; i < orderedRows.length; i++) {
       const row = orderedRows[i]
       const key = getPrtRowStableKey(row.sourcePosGara)
-      const rowHasDsqPenalty = hasDsqPenalty(penalties[key] || [])
+      const rowHasDsqPenalty = hasDsqPenalty(penalties[key] || [], currentRace)
       const isDsq =
         (row.tempoTotaleGara || "").trim().toUpperCase() === "DSQ" || rowHasDsqPenalty
 
@@ -6618,7 +6681,7 @@ const presentPilotKeys = new Set(
         continue
       }
 
-      const penaltySec = totalPenaltySeconds(penalties[key] || [])
+      const penaltySec = totalPenaltySeconds(penalties[key] || [], currentRace)
 
       comparable.push({
         orderedIndex: i,
@@ -11732,6 +11795,7 @@ const lastCreatedMovementText = useMemo(() => {
     prtMode={prtMode}
     unionMode={unionMode}
     penalties={penalties}
+    raceNumber={currentRace}
     tableTitle="Classifica (output)"
   />
 )}
@@ -12004,7 +12068,7 @@ const lastCreatedMovementText = useMemo(() => {
           {dgInfo.map(({ row, isDoppiato, isDnf, key, manualGap, manualGapValid }, idx) => {
             const dnfValue = dnfOverrides[key] || "DNF"
             const entries = penalties[key] || []
-            const penaltyMain = getPenaltyMainDisplay(entries)
+            const penaltyMain = getPenaltyMainDisplay(entries, currentRace)
             const penaltyDisabled = false
 
             return (
@@ -15391,6 +15455,7 @@ const changed = currentValue !== originalValue
           unionMode={unionMode}
           exporting={true}
           penalties={penalties}
+          raceNumber={currentRace}
           forceHideMeta={!exportMetaInPng}
           tableTitle="Classifica definitiva"
         />

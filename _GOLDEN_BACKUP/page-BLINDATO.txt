@@ -86,6 +86,12 @@ type DriverChampionshipRow = {
 type DriverLeagueMap = Record<ChampionshipLeagueKey, string[]>
 
 type DriverAliasMap = Record<ChampionshipLeagueKey, Record<string, string>>
+type DriverRatingPenalty =
+  | "Sospeso per 1 gara"
+  | "Sospeso per 2 gare"
+  | "Squalificato"
+
+type DriverRatingValue = number | DriverRatingPenalty
 
 type MovementType = "promote" | "relegate"
 type MovementDrawerAction = "move" | "swap" | "replace_remove"
@@ -125,7 +131,7 @@ type BackupFile = {
   manualRace12Draft: Record<string, { g1: string; g2: string }>
   driverLeagueMap: DriverLeagueMap
   driverAliasMap: DriverAliasMap
-  driverRatingMap: Record<string, number>
+  driverRatingMap: Record<string, DriverRatingValue>
   uploadedLeagueHtmls: Partial<Record<ChampionshipLeagueKey, string>>
 }
 
@@ -3449,7 +3455,7 @@ const [driverAliasMap, setDriverAliasMap] = useState<DriverAliasMap>({
   GT: {},
 })
 
-const [driverRatingMap, setDriverRatingMap] = useState<Record<string, number>>({})
+const [driverRatingMap, setDriverRatingMap] = useState<Record<string, DriverRatingValue>>({})
 
 const [unknownDriverSelections, setUnknownDriverSelections] = useState<Record<string, string>>({})
 const [dismissedUnknownDrivers, setDismissedUnknownDrivers] = useState<Record<string, true>>({})
@@ -5526,19 +5532,52 @@ function getDriverRatingKey(pilota: string) {
   return normalizeDriverNameForChampionship(pilota)
 }
 
+type DriverRatingPenalty = "Sospeso per 1 gara" | "Sospeso per 2 gare" | "Squalificato"
+type DriverRatingValue = number | DriverRatingPenalty
+
 function DriverRatingStars({
   value,
   exporting = false,
   onChange,
 }: {
-  value: number
+  value: DriverRatingValue
   exporting?: boolean
-  onChange?: (v: number) => void
+  onChange?: (v: DriverRatingValue) => void
 }) {
-  const safeValue = Math.max(0, Math.min(5, Number(value) || 0))
+  const isPenalty = typeof value === "string"
+  const safeValue = isPenalty ? 0 : Math.max(0, Math.min(5, Number(value) || 0))
   const starSize = exporting ? 16 : 17
   const [hoverValue, setHoverValue] = React.useState<number | null>(null)
   const displayValue = exporting ? safeValue : (hoverValue ?? safeValue)
+
+  if (isPenalty) {
+  return (
+    <span
+      onClick={() => {
+        if (!exporting && onChange) onChange(5)
+      }}
+      title={exporting ? undefined : "Clicca per ripristinare 5 stelle"}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: exporting ? "5px 10px" : "4px 9px",
+        borderRadius: 999,
+        background: "rgba(239,68,68,0.92)",
+        border: "1px solid rgba(239,68,68,0.65)",
+        boxShadow: "0 0 16px rgba(239,68,68,0.28)",
+        color: "#fff",
+        fontSize: exporting ? 11 : 10,
+        fontWeight: 900,
+        textTransform: "uppercase",
+        whiteSpace: "nowrap",
+        cursor: exporting ? "default" : "pointer",
+      }}
+    >
+      {value}
+    </span>
+  )
+}
 
   return (
     <div
@@ -5565,10 +5604,27 @@ function DriverRatingStars({
             }}
             onClick={() => {
               if (!exporting && onChange) {
+                if (starIndex === 1 && safeValue === 1) {
+                  const scelta = window.prompt(
+                    "Provvedimento rating:\n1 = Sospeso per 1 gara\n2 = Sospeso per 2 gare\n3 = Squalificato"
+                  )
+
+                  if (scelta === "1") onChange("Sospeso per 1 gara")
+                  if (scelta === "2") onChange("Sospeso per 2 gare")
+                  if (scelta === "3") onChange("Squalificato")
+                  return
+                }
+
                 onChange(starIndex)
               }
             }}
-            title={exporting ? undefined : `${starIndex} stelle`}
+            title={
+              exporting
+                ? undefined
+                : starIndex === 1 && safeValue === 1
+                  ? "Clicca per togliere anche l'ultima stella"
+                  : `${starIndex} stelle`
+            }
             style={{
               fontSize: starSize,
               lineHeight: 1,
@@ -5617,8 +5673,8 @@ function ChampionshipTableBlock({
   championshipRacesIncludedLabel: string
   driverChampionshipByLeague: Record<ChampionshipLeagueKey, DriverChampionshipRow[]>
   manualRace12Draft: Record<string, { g1: string; g2: string }>
-  driverRatingMap?: Record<string, number>
-  setDriverRatingMap?: React.Dispatch<React.SetStateAction<Record<string, number>>>
+  driverRatingMap?: Record<string, DriverRatingValue>
+setDriverRatingMap?: React.Dispatch<React.SetStateAction<Record<string, DriverRatingValue>>>
   exporting?: boolean
   editingRaceCell?: { driverKey: string; race: 1 | 2 } | null
   setEditingRaceCell?: React.Dispatch<
@@ -5972,10 +6028,7 @@ function ChampionshipTableBlock({
           >
             {leagueRows.map((driver, index) => {
               const ratingKey = getDriverRatingKey(driver.pilota)
-              const currentRating = Math.max(
-                0,
-                Math.min(5, driverRatingMap[ratingKey] ?? 5)
-              )
+              const currentRating = driverRatingMap[ratingKey] ?? 5
 
               return (
                 <tr
@@ -6056,7 +6109,7 @@ function ChampionshipTableBlock({
                         if (!setDriverRatingMap) return
                         setDriverRatingMap((prev) => ({
                           ...prev,
-                          [ratingKey]: Math.max(0, Math.min(5, v)),
+                          [ratingKey]: typeof v === "number" ? Math.max(1, Math.min(5, v)) : v,
                         }))
                       }}
                     />
