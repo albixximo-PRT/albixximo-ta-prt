@@ -350,6 +350,14 @@ const KNOWN_CARS = [
   "GT-R Gr.B Rally Car",
   "NSX Gr.B Rally Car",
   "86 Gr.B Rally Car",
+    "296 GT3 '23",
+  "911 GT3 R (992) '22",
+  "R.S.01 GT3 '16",
+  "Beetle Gr.3",
+  "R8 LMS Evo '19",
+  "Mercedes-AMG GT3 '20",
+  "911 RSR (991) '17",
+  "GR Supra Racing Concept '18",
 ]
 
 function normalizeCarLoose(s: string) {
@@ -432,6 +440,20 @@ function looksLikeKnownCarToken(s: string) {
     t.includes("gtr") ||
     t.includes("650s") ||
     t.includes("atenza") ||
+        t.includes("296") ||
+    t.includes("911 gt3 r") ||
+    t.includes("(992)") ||
+    t.includes("r.s.01") ||
+    t.includes("rs.01") ||
+    t.includes("beetle") ||
+    t.includes("r8 lms") ||
+    t.includes("lms evo") ||
+    t.includes("mercedes-amg") ||
+    t.includes("amg gt3") ||
+    t.includes("911 rsr") ||
+    t.includes("(991)") ||
+    t.includes("supra racing concept") ||
+    t.includes("gr supra") ||
     t.includes("silvia") ||
     t.includes("touring car") ||
     t.includes("tt cup") ||
@@ -900,6 +922,7 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
     /\(\d{3}\)/.test(s) ||
     /'\d{2}\b/.test(s) ||
     /\b\d{2}\b/.test(s) ||
+    /\bGT3\b/i.test(s) ||
     /\bGr\.?4\b/i.test(s) ||
     /\bGr\.?B\b/i.test(s) ||
     /Rally\s+Car/i.test(s)
