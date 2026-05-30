@@ -3556,6 +3556,9 @@ const [driverRatingMap, setDriverRatingMap] = useState<Record<string, DriverRati
 
 const [unknownDriverSelections, setUnknownDriverSelections] = useState<Record<string, string>>({})
 const [dismissedUnknownDrivers, setDismissedUnknownDrivers] = useState<Record<string, true>>({})
+const [pendingQualiAliasName, setPendingQualiAliasName] = useState("")
+const [pendingQualiAliasTarget, setPendingQualiAliasTarget] = useState("")
+const [dismissedQualiAliasNames, setDismissedQualiAliasNames] = useState<Record<string, true>>({})
 
 const [uploadedLeagueHtmls, setUploadedLeagueHtmls] = useState<
   Partial<Record<ChampionshipLeagueKey, string>>
@@ -6428,12 +6431,54 @@ function resetBaselineDraft() {
     }
   })
 
+    for (const q of qualiRows) {
+    const qualiName = String(q.pilota || "").trim()
+    if (!qualiName) continue
+
+    const normalizedRaw = normalizeDriverLookupName(qualiName)
+    if (!normalizedRaw) continue
+
+    const alreadyOfficial = officialLeaguePilots.some(
+      (pilot) => normalizeDriverLookupName(pilot) === normalizedRaw
+    )
+
+    const alreadyAlias = !!aliasMapForLeague[normalizedRaw]
+
+    const alreadyInRace = baseRows.some(
+      (row) => normalizeDriverLookupName(row.pilota) === normalizedRaw
+    )
+
+    const hasTime = String(q.tempo || "").trim().length > 0
+
+    if (
+      hasTime &&
+      !alreadyOfficial &&
+      !alreadyAlias &&
+      !alreadyInRace
+    ) {
+      const bestMatch = findBestOfficialPilotMatch(qualiName, officialLeaguePilots)
+      const unresolvedId = `${selectedLeague}:${normalizedRaw}`
+
+      if (!dismissedUnknownDrivers[unresolvedId] && !unresolvedMap.has(unresolvedId)) {
+        unresolvedMap.set(unresolvedId, {
+          id: unresolvedId,
+          rawName: qualiName,
+          normalizedRawName: normalizedRaw,
+          league: selectedLeague,
+          suggestedOfficialName: bestMatch?.officialName || "",
+          suggestedScore: bestMatch?.score || 0,
+        })
+      }
+    }
+  }
+
   return {
     baseRows,
     unresolvedCandidates: Array.from(unresolvedMap.values()),
   }
 }, [
   previewRows,
+  qualiRows,
   manualPilotOverrides,
   manualAutoOverrides,
   manualDistaccoOverrides,
