@@ -11372,33 +11372,6 @@ const lastCreatedMovementText = useMemo(() => {
     </button>
 
     <button
-  onClick={() => {
-    setRows((prev) =>
-      applyQualiRaceAliasToRows(
-        prev,
-        qualiRows,
-        "PRT_Leox86",
-        "leonardolacatena"
-      )
-    )
-  }}
-  style={{
-    padding: "12px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(34,197,94,0.30)",
-    background: "rgba(34,197,94,0.18)",
-    color: "white",
-    cursor: "pointer",
-    fontWeight: 900,
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
-    fontSize: 12,
-  }}
->
-  Test Alias
-</button>
-
-    <button
       onClick={resetAll}
       style={{
         padding: "12px 14px",
