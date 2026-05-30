@@ -9973,18 +9973,31 @@ const aliasMapForLeague =
   driverAliasMap[effectiveImportLeague] || {}
 
 for (const [rawAliasKey, officialName] of Object.entries(aliasMapForLeague)) {
+  const official = String(officialName)
+
   const quali = extractedQualiRows.find(
-  (q: QualiRow) => normalizeDriverLookupName(q.pilota) === rawAliasKey
-)
-
-  if (!quali) continue
-
-  rowsWithAliases = applyQualiRaceAliasToRows(
-    rowsWithAliases,
-    extractedQualiRows,
-    quali.pilota,
-    String(officialName)
+    (q: QualiRow) => normalizeDriverLookupName(q.pilota) === rawAliasKey
   )
+
+  if (quali) {
+    rowsWithAliases = applyQualiRaceAliasToRows(
+      rowsWithAliases,
+      extractedQualiRows,
+      quali.pilota,
+      official
+    )
+  }
+
+  rowsWithAliases = rowsWithAliases.map((row: ExtractRow) => {
+    const rowKey = normalizeDriverLookupName(row.pilota)
+
+    if (rowKey !== rawAliasKey) return row
+
+    return {
+      ...row,
+      pilota: official,
+    }
+  })
 }
 
 setRows(rowsWithAliases)
