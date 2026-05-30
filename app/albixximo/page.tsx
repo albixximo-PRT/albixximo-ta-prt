@@ -14,6 +14,14 @@ type ExtractRow = {
   pole?: string
 }
 
+type QualiRow = {
+  pos: number
+  pilota: string
+  auto: string
+  tempo: string
+  distacco: string
+}
+
 type DisplayRow = ExtractRow & {
   sourcePosGara: number
 }
@@ -669,6 +677,33 @@ function normalizeDriverLookupName(value: string) {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "")
+}
+
+function applyQualiRaceAliasToRows(
+  rows: ExtractRow[],
+  qualiRows: QualiRow[],
+  fromQualiName: string,
+  toRaceName: string
+): ExtractRow[] {
+  const quali = qualiRows.find(
+    (q) => normalizeDriverLookupName(q.pilota) === normalizeDriverLookupName(fromQualiName)
+  )
+
+  if (!quali) return rows
+
+  return rows.map((row) => {
+    const isTargetRacePilot =
+      normalizeDriverLookupName(row.pilota) === normalizeDriverLookupName(toRaceName)
+
+    const isOldPole =
+      (row.pole || "").trim().toUpperCase() === "POLE"
+
+    return {
+      ...row,
+      tempoQualifica: isTargetRacePilot ? quali.tempo : row.tempoQualifica,
+      pole: isTargetRacePilot ? "POLE" : isOldPole ? "" : row.pole,
+    }
+  })
 }
 
 function levenshteinDistance(a: string, b: string): number {
@@ -3433,6 +3468,7 @@ export default function Page() {
   const [files, setFiles] = useState<File[]>([])
   const [csv, setCsv] = useState("")
   const [rows, setRows] = useState<ExtractRow[]>([])
+  const [qualiRows, setQualiRows] = useState<QualiRow[]>([])
   const [unionMeta, setUnionMeta] = useState<UnionMeta>({ gara: "", lobby: "", lega: "" })
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -9850,6 +9886,7 @@ async function run(targetLeague?: ChampionshipLeagueKey) {
     } else {
       setCsv(data.csv || "")
       setRows(Array.isArray(data.rows) ? data.rows : [])
+      setQualiRows(Array.isArray(data.qualiRows) ? data.qualiRows : [])
       setUnionMeta(
         data.unionMeta && typeof data.unionMeta === "object"
           ? {
@@ -14674,6 +14711,22 @@ const lastCreatedMovementText = useMemo(() => {
         >
           Reset
         </button>
+
+        <button
+  type="button"
+  onClick={() => {
+    setRows((prev) =>
+      applyQualiRaceAliasToRows(
+        prev,
+        qualiRows,
+        "PRT_Leox86",
+        "leonardolacatena"
+      )
+    )
+  }}
+>
+  Test alias quali/gara
+</button>
 
         <button
           onClick={applyPilotCorrections}

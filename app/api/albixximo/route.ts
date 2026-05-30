@@ -1778,6 +1778,7 @@ const tempoQualifica =
       tool: "Albixximo Race Tools — Race CSV Extractor PRO",
       count: outTable.length,
       rows: outTable,
+      qualiRows,
       csv,
       polePilot,
       unionMeta,
