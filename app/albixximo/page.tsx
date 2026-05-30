@@ -14001,6 +14001,14 @@ const lastCreatedMovementText = useMemo(() => {
       activeUnknownDriver.rawName,
       selectedOfficial
     )
+    setRows((prev) =>
+  applyQualiRaceAliasToRows(
+    prev,
+    qualiRows,
+    activeUnknownDriver.rawName,
+    selectedOfficial
+  )
+)
 
     setUnknownDriverSelections((prev) => {
       const next = { ...prev }
