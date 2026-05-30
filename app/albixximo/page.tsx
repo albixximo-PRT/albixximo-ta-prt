@@ -14011,14 +14011,27 @@ const lastCreatedMovementText = useMemo(() => {
       activeUnknownDriver.rawName,
       selectedOfficial
     )
-    setRows((prev) =>
-  applyQualiRaceAliasToRows(
-    prev,
+    setRows((prev) => {
+  const rawKey = normalizeDriverLookupName(activeUnknownDriver.rawName)
+
+  const renamedRows = prev.map((row: ExtractRow) => {
+    const rowKey = normalizeDriverLookupName(row.pilota)
+
+    if (rowKey !== rawKey) return row
+
+    return {
+      ...row,
+      pilota: selectedOfficial,
+    }
+  })
+
+  return applyQualiRaceAliasToRows(
+    renamedRows,
     qualiRows,
     activeUnknownDriver.rawName,
     selectedOfficial
   )
-)
+})
 
     setUnknownDriverSelections((prev) => {
       const next = { ...prev }
