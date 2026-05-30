@@ -3546,7 +3546,9 @@ function cloneDriverLeagueMap(source: DriverLeagueMap): DriverLeagueMap {
 
 const [driverAliasMap, setDriverAliasMap] = useState<DriverAliasMap>({
   ELITE: {},
-  PLATINUM: {},
+  PLATINUM: {
+    focuss: "JM_focuss_71",
+  },
   MASTER: {},
   PRO: {},
   GT: {},
