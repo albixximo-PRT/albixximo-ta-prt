@@ -9930,26 +9930,53 @@ async function run(targetLeague?: ChampionshipLeagueKey) {
       setError(JSON.stringify(data, null, 2))
     } else {
       setCsv(data.csv || "")
-      setRows(Array.isArray(data.rows) ? data.rows : [])
-      setQualiRows(Array.isArray(data.qualiRows) ? data.qualiRows : [])
-      setUnionMeta(
-        data.unionMeta && typeof data.unionMeta === "object"
-          ? {
-              gara: data.unionMeta.gara || "",
-              lobby: data.unionMeta.lobby || "",
-              lega: data.unionMeta.lega || "",
-            }
-          : { gara: "", lobby: "", lega: "" }
-      )
 
-      const detectedLeague = normalizeLeagueKey(
-        data.unionMeta && typeof data.unionMeta === "object"
-          ? data.unionMeta.lega || ""
-          : ""
-      )
+const extractedRows: ExtractRow[] = Array.isArray(data.rows)
+  ? data.rows
+  : []
 
-      const effectiveImportLeague =
-        targetLeague || detectedLeague || selectedLeague
+const extractedQualiRows: QualiRow[] = Array.isArray(data.qualiRows)
+  ? data.qualiRows
+  : []
+
+const nextUnionMeta =
+  data.unionMeta && typeof data.unionMeta === "object"
+    ? {
+        gara: data.unionMeta.gara || "",
+        lobby: data.unionMeta.lobby || "",
+        lega: data.unionMeta.lega || "",
+      }
+    : { gara: "", lobby: "", lega: "" }
+
+setUnionMeta(nextUnionMeta)
+
+const detectedLeague = normalizeLeagueKey(nextUnionMeta.lega)
+
+const effectiveImportLeague =
+  targetLeague || detectedLeague || selectedLeague
+
+let rowsWithAliases = extractedRows
+
+const aliasMapForLeague =
+  driverAliasMap[effectiveImportLeague] || {}
+
+for (const [rawAliasKey, officialName] of Object.entries(aliasMapForLeague)) {
+  const quali = extractedQualiRows.find(
+  (q: QualiRow) => normalizeDriverLookupName(q.pilota) === rawAliasKey
+)
+
+  if (!quali) continue
+
+  rowsWithAliases = applyQualiRaceAliasToRows(
+    rowsWithAliases,
+    extractedQualiRows,
+    quali.pilota,
+    String(officialName)
+  )
+}
+
+setRows(rowsWithAliases)
+setQualiRows(extractedQualiRows)
 
       if (effectiveImportLeague) {
         setSelectedLeague(effectiveImportLeague)
