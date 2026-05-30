@@ -328,6 +328,7 @@ const KNOWN_CARS = [
   "Mégane Trophy '11",
   "Swift Sport Gr.4",
   "458 Italia Gr.4",
+  "458 Italia GT3 '13",
   "TT Cup '16",
   "4C Gr.4",
   "ELANTRA N TC '24",
