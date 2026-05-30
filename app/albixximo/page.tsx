@@ -6444,9 +6444,19 @@ function resetBaselineDraft() {
 
     const alreadyAlias = !!aliasMapForLeague[normalizedRaw]
 
-    const alreadyInRace = baseRows.some(
-      (row) => normalizeDriverLookupName(row.pilota) === normalizedRaw
+    const alreadyInRaceAsOfficialOrAlias = baseRows.some((row) => {
+  const rowKey = normalizeDriverLookupName(row.pilota)
+
+  return (
+    rowKey === normalizedRaw &&
+    (
+      officialLeaguePilots.some(
+        (pilot) => normalizeDriverLookupName(pilot) === rowKey
+      ) ||
+      !!aliasMapForLeague[rowKey]
     )
+  )
+})
 
     const hasTime = String(q.tempo || "").trim().length > 0
 
@@ -6454,7 +6464,7 @@ function resetBaselineDraft() {
       hasTime &&
       !alreadyOfficial &&
       !alreadyAlias &&
-      !alreadyInRace
+      !alreadyInRaceAsOfficialOrAlias
     ) {
       const bestMatch = findBestOfficialPilotMatch(qualiName, officialLeaguePilots)
       const unresolvedId = `${selectedLeague}:${normalizedRaw}`
