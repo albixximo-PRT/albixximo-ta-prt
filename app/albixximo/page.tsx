@@ -7749,7 +7749,7 @@ for (const driver of map.values()) {
   }
 
   const activeMovement = (() => {
-  const movementRounds = [3, 6, 9, 12]
+  const movementRounds = [12, 9, 6, 3]
 
   for (const movementRound of movementRounds) {
     if (currentRace < movementRound) continue
