@@ -7799,14 +7799,7 @@ if (activeMovement) {
 }
 
 function getRacePoints(raceNumber: number) {
-  const base = driver.racePoints[raceNumber] || 0
-  const cell = driver.raceResults[raceNumber]
-
-  return (
-    base +
-    (cell?.pp ? 1 : 0) +
-    (cell?.gv ? 1 : 0)
-  )
+  return driver.racePoints[raceNumber] || 0
 }
 
 function getCorrectTotalUntilRound(untilRound: number) {
