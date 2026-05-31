@@ -7788,11 +7788,20 @@ if (activeMovement) {
   }, 0)
 
   const recalculationPointsFull = Object.entries(driver.racePoints).reduce((sum, [race, points]) => {
-    const raceNumber = Number(race)
-    return raceNumber > baseUntilRace && raceNumber <= movementRound
-      ? sum + points
-      : sum
-  }, 0)
+  const raceNumber = Number(race)
+
+  if (!(raceNumber > baseUntilRace && raceNumber <= movementRound)) {
+    return sum
+  }
+
+  const cell = driver.raceResults[raceNumber]
+
+  const bonus =
+    (cell?.pp ? 1 : 0) +
+    (cell?.gv ? 1 : 0)
+
+  return sum + points + bonus
+}, 0)
 
   const afterMovementPoints = Object.entries(driver.racePoints).reduce((sum, [race, points]) => {
     const raceNumber = Number(race)
