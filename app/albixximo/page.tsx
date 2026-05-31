@@ -7845,9 +7845,21 @@ for (const movementRound of [3, 6, 9, 12]) {
   applyFourthDnpAsDsqRule(driver)
 }
 
+const activeDrawerDrivers = new Set(
+  CHAMPIONSHIP_LEAGUES.flatMap((league) =>
+    (driverLeagueMap[league] || []).map((pilot) =>
+      normalizeDriverNameForChampionship(pilot)
+    )
+  )
+)
+
 return Array.from(map.values())
   .filter((driver) => {
-  const disqualificationRace = getDnpDisqualificationRace(driver)
+    const driverKey = normalizeDriverNameForChampionship(driver.pilota)
+
+    if (!activeDrawerDrivers.has(driverKey)) return false
+
+    const disqualificationRace = getDnpDisqualificationRace(driver)
 
   // Se non è mai stato squalificato → resta
   if (disqualificationRace == null) return true
