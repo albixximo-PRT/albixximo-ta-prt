@@ -7837,6 +7837,7 @@ const baseUntilRace = movementRound - 3
 const basePoints = Object.entries(driver.racePoints)
   .filter(([raceNumber]) => Number(raceNumber) <= baseUntilRace)
   .reduce((sum, [, points]) => sum + points, 0)
+
 const recalculationPointsFull = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
   .filter((raceNumber) => raceNumber > baseUntilRace && raceNumber <= movementRound)
   .reduce((sum, raceNumber) => sum + getRacePoints(raceNumber), 0)
