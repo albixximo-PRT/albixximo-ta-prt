@@ -7780,33 +7780,69 @@ if (activeMovement) {
   const movementRound = activeMovement.movementRound
   const multiplier = movementType === "promote" ? 0.6 : 1.5
 
-  const baseUntilRace = movementRound - 3
+  function getMovementForRound(round: number) {
+  const movementState = championshipState.roundMovements?.[round] || {}
 
-  const basePoints = Object.entries(driver.racePoints).reduce((sum, [race, points]) => {
-    const raceNumber = Number(race)
-    return raceNumber <= baseUntilRace ? sum + points : sum
-  }, 0)
+  for (const league of CHAMPIONSHIP_LEAGUES) {
+    const entries = movementState[league] || []
 
-  const recalculationPointsFull = Object.entries(driver.racePoints).reduce((sum, [race, points]) => {
-  const raceNumber = Number(race)
+    for (const entry of entries) {
+      const key = normalizeDriverNameForChampionship(entry.driverName)
 
-  if (!(raceNumber > baseUntilRace && raceNumber <= movementRound)) {
-    return sum
+      if (key === driverKey) {
+        return entry
+      }
+    }
   }
 
-  const cell = driver.raceResults[raceNumber]
+  return null
+}
 
-  const bonus =
-    (cell?.pp ? 1 : 0) +
-    (cell?.gv ? 1 : 0)
+function getRacePoints(raceNumber: number) {
+  return driver.racePoints[raceNumber] || 0
+}
 
-  return sum + points + bonus
-}, 0)
+function getCorrectTotalUntilRound(untilRound: number) {
+  let total = 0
+  let previousCheckpoint = 0
 
-  const afterMovementPoints = Object.entries(driver.racePoints).reduce((sum, [race, points]) => {
-    const raceNumber = Number(race)
-    return raceNumber > movementRound ? sum + points : sum
-  }, 0)
+  for (const checkpoint of [3, 6, 9, 12]) {
+    if (checkpoint > untilRound) break
+
+    const movement = getMovementForRound(checkpoint)
+
+    const blockPoints = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+      .filter((raceNumber) => raceNumber > previousCheckpoint && raceNumber <= checkpoint)
+      .reduce((sum, raceNumber) => sum + getRacePoints(raceNumber), 0)
+
+    if (movement) {
+      const multiplier = movement.type === "promote" ? 0.6 : 1.5
+      total += Math.ceil(blockPoints * multiplier)
+    } else {
+      total += blockPoints
+    }
+
+    previousCheckpoint = checkpoint
+  }
+
+  const remainingPoints = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+    .filter((raceNumber) => raceNumber > previousCheckpoint && raceNumber <= untilRound)
+    .reduce((sum, raceNumber) => sum + getRacePoints(raceNumber), 0)
+
+  return total + remainingPoints
+}
+
+const baseUntilRace = movementRound - 3
+
+const basePoints = getCorrectTotalUntilRound(baseUntilRace)
+
+const recalculationPointsFull = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+  .filter((raceNumber) => raceNumber > baseUntilRace && raceNumber <= movementRound)
+  .reduce((sum, raceNumber) => sum + getRacePoints(raceNumber), 0)
+
+const afterMovementPoints = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+  .filter((raceNumber) => raceNumber > movementRound)
+  .reduce((sum, raceNumber) => sum + getRacePoints(raceNumber), 0)
 
   driver.totalPoints =
     basePoints +
