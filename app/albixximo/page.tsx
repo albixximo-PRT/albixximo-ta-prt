@@ -7748,27 +7748,26 @@ for (const driver of map.values()) {
     }
   }
 
-  const g1Cell = driver.raceResults[1] || null
-  const g2Cell = driver.raceResults[2] || null
-  const g3Cell = driver.raceResults[3] || null
-
-  const g1Points = driver.racePoints[1] ?? 0
-  const g2Points = driver.racePoints[2] ?? 0
-  const g3Points = driver.racePoints[3] ?? 0
-
   const activeMovement = (() => {
-  if (currentRace < 3) return null
+  const movementRounds = [3, 6, 9, 12]
 
-  const round3Movements = championshipState.roundMovements?.[3] || {}
+  for (const movementRound of movementRounds) {
+    if (currentRace < movementRound) continue
 
-  for (const league of CHAMPIONSHIP_LEAGUES) {
-    const entries = round3Movements[league] || []
+    const movementState = championshipState.roundMovements?.[movementRound] || {}
 
-    for (const entry of entries) {
-      const key = normalizeDriverNameForChampionship(entry.driverName)
+    for (const league of CHAMPIONSHIP_LEAGUES) {
+      const entries = movementState[league] || []
 
-      if (key === driverKey) {
-        return entry
+      for (const entry of entries) {
+        const key = normalizeDriverNameForChampionship(entry.driverName)
+
+        if (key === driverKey) {
+          return {
+            entry,
+            movementRound,
+          }
+        }
       }
     }
   }
@@ -7776,44 +7775,46 @@ for (const driver of map.values()) {
   return null
 })()
 
-if (currentRace >= 3 && activeMovement) {
-  const movementType = activeMovement.type
+if (activeMovement) {
+  const movementType = activeMovement.entry.type
+  const movementRound = activeMovement.movementRound
   const multiplier = movementType === "promote" ? 0.6 : 1.5
 
-  const recalculatedG2 = Math.ceil(g2Points * multiplier)
-  const recalculatedG3 = Math.ceil(g3Points * multiplier)
+  const baseUntilRace = movementRound - 3
 
-  // G1 resta sempre invariata
-  const laterPoints = Object.entries(driver.racePoints).reduce((sum, [race, points]) => {
+  const basePoints = Object.entries(driver.racePoints).reduce((sum, [race, points]) => {
     const raceNumber = Number(race)
-    return raceNumber >= 4 ? sum + points : sum
+    return raceNumber <= baseUntilRace ? sum + points : sum
   }, 0)
 
-  driver.totalPoints = g1Points + recalculatedG2 + recalculatedG3 + laterPoints
+  const recalculationPointsFull = Object.entries(driver.racePoints).reduce((sum, [race, points]) => {
+    const raceNumber = Number(race)
+    return raceNumber > baseUntilRace && raceNumber <= movementRound
+      ? sum + points
+      : sum
+  }, 0)
 
-    if (g1Cell) {
-      driver.raceResults[1] = {
-        ...g1Cell,
-        specialMovement: movementType,
-      }
-    }
+  const afterMovementPoints = Object.entries(driver.racePoints).reduce((sum, [race, points]) => {
+    const raceNumber = Number(race)
+    return raceNumber > movementRound ? sum + points : sum
+  }, 0)
 
-    if (g2Cell) {
-      driver.raceResults[2] = {
-        ...g2Cell,
-        specialMovement: movementType,
-      }
-    }
+  driver.totalPoints =
+    basePoints +
+    Math.ceil(recalculationPointsFull * multiplier) +
+    afterMovementPoints
 
-    if (g3Cell) {
-      driver.raceResults[3] = {
-        ...g3Cell,
-        specialMovement: movementType,
-      }
+  const movementCell = driver.raceResults[movementRound]
+
+  if (movementCell) {
+    driver.raceResults[movementRound] = {
+      ...movementCell,
+      specialMovement: movementType,
     }
-  } else {
-    driver.totalPoints = Object.values(driver.racePoints).reduce((a, b) => a + b, 0)
   }
+} else {
+  driver.totalPoints = Object.values(driver.racePoints).reduce((a, b) => a + b, 0)
+}
 }
 // Frecce storiche promo/retro: solo grafica, non modifica punti
 for (const movementRound of [3, 6, 9, 12]) {
