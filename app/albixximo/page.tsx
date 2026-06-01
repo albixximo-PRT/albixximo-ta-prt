@@ -7799,6 +7799,16 @@ if (activeMovement) {
 }
 
 function getRacePoints(raceNumber: number) {
+  const cell = driver.raceResults[raceNumber]
+
+  if (cell) {
+    return (
+      (cell.points || 0) +
+      (cell.pp ? 1 : 0) +
+      (cell.gv ? 1 : 0)
+    )
+  }
+
   return driver.racePoints[raceNumber] || 0
 }
 
