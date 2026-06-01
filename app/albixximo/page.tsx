@@ -7799,14 +7799,7 @@ if (activeMovement) {
 }
 
 function getRacePoints(raceNumber: number) {
-  const base = driver.racePoints[raceNumber] || 0
-  const cell = driver.raceResults[raceNumber]
-
-  return (
-    base +
-    (cell?.pp ? 1 : 0) +
-    (cell?.gv ? 1 : 0)
-  )
+  return driver.racePoints[raceNumber] || 0
 }
 
 function getCorrectTotalUntilRound(untilRound: number) {
@@ -7841,9 +7834,7 @@ function getCorrectTotalUntilRound(untilRound: number) {
 
 const baseUntilRace = movementRound - 3
 
-const basePoints = Object.entries(driver.racePoints)
-  .filter(([raceNumber]) => Number(raceNumber) <= baseUntilRace)
-  .reduce((sum, [, points]) => sum + points, 0)
+const basePoints = getCorrectTotalUntilRound(baseUntilRace)
 
 const recalculationPointsFull = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
   .filter((raceNumber) => raceNumber > baseUntilRace && raceNumber <= movementRound)
