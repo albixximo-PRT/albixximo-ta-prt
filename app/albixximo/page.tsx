@@ -111,6 +111,7 @@ type LeagueMovementEntry = {
   type: MovementType
   drawerAction: MovementDrawerAction
   targetDriverName: string | null
+  basePointsOverride?: number | null
 }
 
 type RoundMovementState = Partial<Record<ChampionshipLeagueKey, LeagueMovementEntry[]>>
@@ -3579,6 +3580,20 @@ const [movementDraftTargetLeague, setMovementDraftTargetLeague] =
   useState<ChampionshipLeagueKey>("ELITE")
 const [movementDrawerAction, setMovementDrawerAction] =
   useState<MovementDrawerAction>("move")
+  const [pendingMovementEntry, setPendingMovementEntry] =
+  useState<LeagueMovementEntry | null>(null)
+
+const [showMovementBaseModal, setShowMovementBaseModal] =
+  useState(false)
+
+const [movementBaseMode, setMovementBaseMode] =
+  useState<"detected" | "manual">("detected")
+
+const [movementManualBasePoints, setMovementManualBasePoints] =
+  useState("")
+
+const [detectedMovementBasePoints, setDetectedMovementBasePoints] =
+  useState(0)
 
 const [movementDraftTargetDriver, setMovementDraftTargetDriver] = useState("")
 const [editingRaceCell, setEditingRaceCell] = useState<{
@@ -7196,24 +7211,86 @@ useEffect(() => {
   }
 }, [movementDraftLeague, movementDraftDriverName, driverLeagueMap])
 
+function getPreviousMovementCheckpoint(round: number) {
+  if (round === 6) return 3
+  if (round === 9) return 6
+  if (round === 12) return 9
+  return 0
+}
+
+function getDetectedBasePointsForMovement(driverName: string, movementRound: number) {
+  const checkpoint = getPreviousMovementCheckpoint(movementRound)
+  if (checkpoint <= 0) return 0
+
+  const driverKey = normalizeDriverNameForChampionship(driverName)
+  const driver = driverChampionship.find(
+    (item) => normalizeDriverNameForChampionship(item.pilota) === driverKey
+  )
+
+  if (!driver) return 0
+
+  return Object.entries(driver.racePoints).reduce((sum, [race, points]) => {
+    const raceNumber = Number(race)
+    return raceNumber <= checkpoint ? sum + points : sum
+  }, 0)
+}
+
 function submitMovementDraft() {
   const cleanDriverName = String(movementDraftDriverName || "").trim()
   if (!cleanDriverName) return
 
   const createdEntry: LeagueMovementEntry = {
-  driverName: cleanDriverName,
-  fromLeague: movementDraftLeague,
-  toLeague: movementDraftTargetLeague,
-  type: movementDraftType,
-  drawerAction: movementDrawerAction,
-  targetDriverName: movementDraftTargetDriver || null,
+    driverName: cleanDriverName,
+    fromLeague: movementDraftLeague,
+    toLeague: movementDraftTargetLeague,
+    type: movementDraftType,
+    drawerAction: movementDrawerAction,
+    targetDriverName: movementDraftTargetDriver || null,
+    basePointsOverride: null,
+  }
+
+  const previousCheckpoint = getPreviousMovementCheckpoint(currentRace)
+
+  if (previousCheckpoint > 0) {
+    const detectedBase = getDetectedBasePointsForMovement(cleanDriverName, currentRace)
+
+    setPendingMovementEntry(createdEntry)
+    setDetectedMovementBasePoints(detectedBase)
+    setMovementManualBasePoints(String(detectedBase))
+    setMovementBaseMode("detected")
+    setShowMovementBaseModal(true)
+    return
+  }
+
+  addRoundMovementEntry(movementDraftLeague, createdEntry)
+  setLastCreatedMovement(createdEntry)
+
+  resetMovementDraft(movementDraftLeague)
+  setShowMovementCreatedModal(true)
 }
 
-addRoundMovementEntry(movementDraftLeague, createdEntry)
-setLastCreatedMovement(createdEntry)
+function confirmPendingMovementWithBase() {
+  if (!pendingMovementEntry) return
 
-resetMovementDraft(movementDraftLeague)
-setShowMovementCreatedModal(true)
+  const manualValue = Number(movementManualBasePoints)
+  const finalBase =
+    movementBaseMode === "manual" && Number.isFinite(manualValue)
+      ? manualValue
+      : detectedMovementBasePoints
+
+  const completedEntry: LeagueMovementEntry = {
+    ...pendingMovementEntry,
+    basePointsOverride: finalBase,
+  }
+
+  addRoundMovementEntry(completedEntry.fromLeague, completedEntry)
+  setLastCreatedMovement(completedEntry)
+
+  resetMovementDraft(completedEntry.fromLeague)
+
+  setPendingMovementEntry(null)
+  setShowMovementBaseModal(false)
+  setShowMovementCreatedModal(true)
 }
 
 function applySingleMovementToDrawer(entry: LeagueMovementEntry) {
@@ -7802,19 +7879,8 @@ function getRacePoints(raceNumber: number) {
   return driver.racePoints[raceNumber] || 0
 }
 
-const MANUAL_CHECKPOINT_TOTALS: Record<string, Partial<Record<number, number>>> = {
-  simoppr: {
-    3: 46,
-  },
-}
-
 function getCorrectTotalUntilRound(untilRound: number) {
-    const manualCheckpoint =
-    MANUAL_CHECKPOINT_TOTALS[driverKey]?.[untilRound]
-
-  if (manualCheckpoint != null) {
-    return manualCheckpoint
-  }
+    
   let total = 0
   let previousCheckpoint = 0
 
@@ -7846,8 +7912,10 @@ function getCorrectTotalUntilRound(untilRound: number) {
 
 const baseUntilRace = movementRound - 3
 
-const basePoints = getCorrectTotalUntilRound(baseUntilRace)
-
+const basePoints =
+  activeMovement.entry.basePointsOverride != null
+    ? activeMovement.entry.basePointsOverride
+    : getCorrectTotalUntilRound(baseUntilRace)
 const recalculationPointsFull = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
   .filter((raceNumber) => raceNumber > baseUntilRace && raceNumber <= movementRound)
   .reduce((sum, raceNumber) => sum + getRacePoints(raceNumber), 0)
@@ -14447,6 +14515,122 @@ const lastCreatedMovementText = useMemo(() => {
     </div>
   </div>
 )}
+      {showMovementBaseModal && pendingMovementEntry ? (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 9999,
+      background: "rgba(0,0,0,0.72)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+    }}
+  >
+    <div
+      style={{
+        width: "min(560px, 100%)",
+        borderRadius: 24,
+        border: "1px solid rgba(255,255,255,0.16)",
+        background: "linear-gradient(180deg, rgba(18,18,24,0.98), rgba(5,5,8,0.98))",
+        boxShadow: "0 24px 90px rgba(0,0,0,0.65)",
+        padding: 22,
+        color: "white",
+      }}
+    >
+      <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 14 }}>
+        PROMOZIONE / RETROCESSIONE — Gara {currentRace}
+      </div>
+
+      <div style={{ lineHeight: 1.8, fontSize: 15 }}>
+        <div><b>Pilota:</b> {pendingMovementEntry.driverName}</div>
+        <div><b>Da:</b> {pendingMovementEntry.fromLeague}</div>
+        <div><b>A:</b> {pendingMovementEntry.toLeague}</div>
+      </div>
+
+      <div style={{ marginTop: 18, fontSize: 15 }}>
+        Totale consolidato dopo Gara {getPreviousMovementCheckpoint(currentRace)} rilevato:
+      </div>
+
+      <div
+        style={{
+          marginTop: 8,
+          padding: "12px 14px",
+          borderRadius: 14,
+          background: "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.14)",
+          fontSize: 24,
+          fontWeight: 900,
+        }}
+      >
+        {detectedMovementBasePoints}
+      </div>
+
+      <div style={{ marginTop: 18, display: "grid", gap: 10 }}>
+        <label>
+          <input
+            type="radio"
+            checked={movementBaseMode === "detected"}
+            onChange={() => setMovementBaseMode("detected")}
+          />{" "}
+          Sì, conferma
+        </label>
+
+        <label>
+          <input
+            type="radio"
+            checked={movementBaseMode === "manual"}
+            onChange={() => setMovementBaseMode("manual")}
+          />{" "}
+          No, inserisco manualmente
+        </label>
+      </div>
+
+      {movementBaseMode === "manual" ? (
+        <div style={{ marginTop: 14 }}>
+          <div style={{ marginBottom: 6, fontWeight: 800 }}>
+            Inserisci punteggio consolidato:
+          </div>
+          <input
+            value={movementManualBasePoints}
+            onChange={(e) => setMovementManualBasePoints(e.target.value)}
+            type="number"
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.20)",
+              background: "rgba(0,0,0,0.35)",
+              color: "white",
+              fontSize: 18,
+              fontWeight: 800,
+            }}
+          />
+        </div>
+      ) : null}
+
+      <div style={{ marginTop: 22, display: "flex", justifyContent: "flex-end", gap: 10 }}>
+        <button
+          type="button"
+          onClick={() => {
+            setPendingMovementEntry(null)
+            setShowMovementBaseModal(false)
+          }}
+        >
+          Annulla
+        </button>
+
+        <button
+          type="button"
+          onClick={confirmPendingMovementWithBase}
+        >
+          Conferma movimento
+        </button>
+      </div>
+    </div>
+  </div>
+) : null} 
       {showApplyMovementsModal && (
   <div
     style={{
