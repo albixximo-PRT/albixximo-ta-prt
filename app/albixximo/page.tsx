@@ -7799,20 +7799,22 @@ if (activeMovement) {
 }
 
 function getRacePoints(raceNumber: number) {
-  const cell = driver.raceResults[raceNumber]
-
-  if (cell) {
-    return (
-      (cell.points || 0) +
-      (cell.pp ? 1 : 0) +
-      (cell.gv ? 1 : 0)
-    )
-  }
-
   return driver.racePoints[raceNumber] || 0
 }
 
+const MANUAL_CHECKPOINT_TOTALS: Record<string, Partial<Record<number, number>>> = {
+  simoppr: {
+    3: 46,
+  },
+}
+
 function getCorrectTotalUntilRound(untilRound: number) {
+    const manualCheckpoint =
+    MANUAL_CHECKPOINT_TOTALS[driverKey]?.[untilRound]
+
+  if (manualCheckpoint != null) {
+    return manualCheckpoint
+  }
   let total = 0
   let previousCheckpoint = 0
 
