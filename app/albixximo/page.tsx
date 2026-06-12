@@ -345,7 +345,7 @@ const NEW_PENALTY_RULES: Record<string, PenaltyRule> = {
   P13: { seconds: 5, effect: "time", shortLabel: "+5s" },
   P14: { seconds: 10, effect: "time", shortLabel: "+10s" },
   P15: { seconds: 10, effect: "time", shortLabel: "+10s" },
-  P16: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P16: { seconds: 20, effect: "time", shortLabel: "+20s" },
   P17: { seconds: 20, effect: "time", shortLabel: "+20s" },
   P18: { seconds: 20, effect: "time", shortLabel: "+20s" },
   P19: { seconds: 30, effect: "time", shortLabel: "+30s" },
