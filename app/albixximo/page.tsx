@@ -2276,7 +2276,7 @@ function renderPrtBestLapCell({
     return "-"
   }
 
-  return <Pill left="NO TIME" variant="orange" exporting={exporting} compact />
+  return <Pill left="NO TIME" variant="orange" exporting={exporting} />
 }
   const bestLapTime = (bestRaceLap.split("  ").pop() || "").trim()
   const isBestLap =
