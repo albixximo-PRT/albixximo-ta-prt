@@ -7728,10 +7728,22 @@ if (currentRace < entryRace) continue
     const snapshot = raceState[league]
     if (!snapshot || !Array.isArray(snapshot.finalRows)) continue
 
-    const snapshotPointsMap = buildSnapshotRacePointsMap(
-      snapshot.finalRows,
-      snapshot.bestRaceLap || ""
+    const snapshotPointsMapRaw = buildSnapshotRacePointsMap(
+  snapshot.finalRows,
+  snapshot.bestRaceLap || ""
+)
+
+const isSpecialGara7PlatinumPoints =
+  raceNumber === 7 && league === "PLATINUM"
+
+const snapshotPointsMap = isSpecialGara7PlatinumPoints
+  ? Object.fromEntries(
+      Object.entries(snapshotPointsMapRaw).map(([pilot, points]) => [
+        pilot,
+        Math.ceil(Number(points || 0) / 2),
+      ])
     )
+  : snapshotPointsMapRaw
 
     for (const row of snapshot.finalRows) {
       const pilotName = String(row.pilota || "").trim()
