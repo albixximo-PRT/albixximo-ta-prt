@@ -2269,6 +2269,15 @@ function renderPrtBestLapCell({
   bestRaceLap: string
   exporting?: boolean
 }) {
+  if ((bestRaceLap || "").trim().toUpperCase() === "NO TIME") {
+  const tempo = tempoLikeGt7(row).trim().toUpperCase()
+
+  if (tempo === "DNP") {
+    return "-"
+  }
+
+  return <Pill left="NO TIME" variant="orange" exporting={exporting} />
+}
   const bestLapTime = (bestRaceLap.split("  ").pop() || "").trim()
   const isBestLap =
     !!bestLapTime && (row.migliorGiroGara || "").trim() === bestLapTime
@@ -3673,6 +3682,11 @@ const normalizedGaraForOutput = useMemo(() => {
 
   return raw
 }, [effectiveGara])
+
+const isSpecialGara7Platinum = useMemo(() => {
+  const league = normalizeLeagueKey(effectiveLega) || selectedLeague
+  return currentRace === 7 && league === "PLATINUM"
+}, [currentRace, effectiveLega, selectedLeague])
 
   const penaltyCodeOptions = useMemo(() => {
   const maxPenaltyCode = currentRace >= 6 ? 32 : 39
@@ -6440,12 +6454,23 @@ function resetBaselineDraft() {
       }
     }
 
-    return {
-      ...r,
-      pilota: resolvedPilot,
-      auto: (manualAutoOverrides[r.sourcePosGara] ?? r.auto ?? "").trim(),
-      distaccoDalPrimo: (manualDistaccoOverrides[r.sourcePosGara] ?? r.distaccoDalPrimo ?? "").trim(),
-      tempoQualifica: (() => {
+    const manualDistaccoValue = (manualDistaccoOverrides[r.sourcePosGara] ?? "").trim()
+
+return {
+  ...r,
+  pilota: resolvedPilot,
+  auto: (manualAutoOverrides[r.sourcePosGara] ?? r.auto ?? "").trim(),
+
+  tempoTotaleGara:
+    isSpecialGara7Platinum && r.posGara === 1 && manualDistaccoValue
+      ? manualDistaccoValue
+      : r.tempoTotaleGara,
+
+  distaccoDalPrimo: (manualDistaccoValue || r.distaccoDalPrimo || "").trim(),
+
+  migliorGiroGara: isSpecialGara7Platinum ? "" : r.migliorGiroGara,
+
+  tempoQualifica: (() => {
   const value = (
     showQualiModal
       ? (manualQualiDraft[r.sourcePosGara] ?? manualQualiOverrides[r.sourcePosGara] ?? r.tempoQualifica ?? "")
@@ -6525,6 +6550,7 @@ function resetBaselineDraft() {
   driverAliasMap,
   selectedLeague,
   dismissedUnknownDrivers,
+  isSpecialGara7Platinum,
 ])
 
 const unresolvedLeagueDrivers = leagueDriverResolution.unresolvedCandidates
@@ -6619,6 +6645,7 @@ const presentPilotKeys = new Set(
   }, [displayRows])
 
   const bestRaceLap = useMemo(() => {
+      if (isSpecialGara7Platinum) return "NO TIME"
     let bestMs: number | null = null
     let bestTime = ""
     let bestPilot = ""
@@ -6635,7 +6662,7 @@ const presentPilotKeys = new Set(
     }
 
     return bestTime ? `${bestPilot || "?"}  ${bestTime}` : ""
-  }, [displayRows])
+  }, [displayRows, isSpecialGara7Platinum])
 
     
 
