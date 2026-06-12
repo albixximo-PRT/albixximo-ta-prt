@@ -671,6 +671,15 @@ function normalizeLeagueKey(value: string): ChampionshipLeagueKey | null {
   return null
 }
 
+const DRIVER_ENTRY_RACE: Record<string, number> = {
+  krasam23: 7,
+}
+
+function getDriverEntryRace(driverName: string) {
+  const key = normalizeDriverLookupName(driverName)
+  return DRIVER_ENTRY_RACE[key] ?? 3
+}
+
 function normalizeDriverLookupName(value: string) {
   return String(value || "")
     .normalize("NFD")
@@ -7609,6 +7618,9 @@ for (let raceNumber = 3; raceNumber <= currentRace; raceNumber++) {
       const key = normalizeDriverNameForChampionship(cleanPilotName)
       if (!key || map.has(key)) continue
 
+      const entryRace = getDriverEntryRace(cleanPilotName)
+if (currentRace < entryRace) continue
+
       const g1Raw = manualRace12Draft[key]?.g1 ?? ""
       const g2Raw = manualRace12Draft[key]?.g2 ?? ""
 
@@ -7809,9 +7821,11 @@ for (const driver of map.values()) {
   const currentLeague = normalizeLeagueKey(driver.league)
 
   if (currentLeague) {
-    for (const raceNumber of savedRaceNumbersByLeague[currentLeague]) {
-      if (!driver.raceResults[raceNumber]) {
-        driver.raceResults[raceNumber] = {
+  for (const raceNumber of savedRaceNumbersByLeague[currentLeague]) {
+    if (raceNumber < getDriverEntryRace(driver.pilota)) continue
+
+    if (!driver.raceResults[raceNumber]) {
+      driver.raceResults[raceNumber] = {
           position: null,
           status: "DNP",
           pp: false,
