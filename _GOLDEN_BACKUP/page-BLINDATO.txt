@@ -14,6 +14,14 @@ type ExtractRow = {
   pole?: string
 }
 
+type QualiRow = {
+  pos: number
+  pilota: string
+  auto: string
+  tempo: string
+  distacco: string
+}
+
 type DisplayRow = ExtractRow & {
   sourcePosGara: number
 }
@@ -103,6 +111,7 @@ type LeagueMovementEntry = {
   type: MovementType
   drawerAction: MovementDrawerAction
   targetDriverName: string | null
+  basePointsOverride?: number | null
 }
 
 type RoundMovementState = Partial<Record<ChampionshipLeagueKey, LeagueMovementEntry[]>>
@@ -320,6 +329,45 @@ const PENALTY_RULES: Record<string, PenaltyRule> = {
 const AMMONITION_CODES = new Set(["P01", "P25", "P31"])
 const DSQ_CODES = new Set(["P16", "P27", "P35", "DSQ"])
 
+const NEW_PENALTY_RULES: Record<string, PenaltyRule> = {
+  P01: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P02: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P03: { seconds: 10, effect: "time", shortLabel: "+10s" },
+  P04: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P05: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P06: { seconds: 25, effect: "time", shortLabel: "+25s" },
+  P07: { seconds: 30, effect: "time", shortLabel: "+30s" },
+  P08: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P09: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P10: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P11: { seconds: 0, effect: "dsq", shortLabel: "SQ CAMP." },
+  P12: { seconds: 40, effect: "time", shortLabel: "+40s" },
+  P13: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P14: { seconds: 10, effect: "time", shortLabel: "+10s" },
+  P15: { seconds: 10, effect: "time", shortLabel: "+10s" },
+  P16: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P17: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P18: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P19: { seconds: 30, effect: "time", shortLabel: "+30s" },
+  P20: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P21: { seconds: 0, effect: "other", shortLabel: "SQ QUAL." },
+  P22: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P23: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P24: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P25: { seconds: 0, effect: "dsq", shortLabel: "SQ CAMP." },
+  P26: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P27: { seconds: 60, effect: "time", shortLabel: "+60s" },
+  P28: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P29: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P30: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P31: { seconds: 0, effect: "dsq", shortLabel: "DSQ" },
+  P32: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  DSQ: { seconds: 0, effect: "dsq", shortLabel: "DSQ" },
+}
+
+const NEW_AMMONITION_CODES = new Set(["P01", "P23", "P26", "P29"])
+const NEW_DSQ_CODES = new Set(["P11", "P25", "P31", "DSQ"])
+
 function getPointsForPrtRow(r: ExtractRow, bestRaceLap: string): number {
   const basePointsMap: Record<number, number> = {
     1: 30,
@@ -518,24 +566,39 @@ function formatPenaltyOptionLabel(seconds: number): string {
   return `${mm} minuti e ${ss} secondi`
 }
 
-function getPenaltyRule(code: string): PenaltyRule {
-  return PENALTY_RULES[code] || { seconds: 0, effect: "other", shortLabel: "-" }
+function getPenaltyRulesForRace(raceNumber: number) {
+  return raceNumber >= 6 ? NEW_PENALTY_RULES : PENALTY_RULES
 }
 
-function penaltySecondsFromCode(code: string): number {
-  return getPenaltyRule(code).seconds
+function getAmmonitionCodesForRace(raceNumber: number) {
+  return raceNumber >= 6 ? NEW_AMMONITION_CODES : AMMONITION_CODES
 }
 
-function hasDsqPenalty(entries: PenaltyEntry[] = []): boolean {
-  return entries.some((entry) => DSQ_CODES.has(entry.code))
+function getDsqCodesForRace(raceNumber: number) {
+  return raceNumber >= 6 ? NEW_DSQ_CODES : DSQ_CODES
 }
 
-function hasAmmonitionPenalty(entries: PenaltyEntry[] = []): boolean {
-  return entries.some((entry) => AMMONITION_CODES.has(entry.code))
+function getPenaltyRule(code: string, raceNumber: number): PenaltyRule {
+  const rules = getPenaltyRulesForRace(raceNumber)
+  return rules[code] || { seconds: 0, effect: "other", shortLabel: "-" }
 }
 
-function totalPenaltySeconds(entries: PenaltyEntry[] = []): number {
-  return entries.reduce((sum, entry) => sum + penaltySecondsFromCode(entry.code), 0)
+function penaltySecondsFromCode(code: string, raceNumber: number): number {
+  return getPenaltyRule(code, raceNumber).seconds
+}
+
+function hasDsqPenalty(entries: PenaltyEntry[] = [], raceNumber: number): boolean {
+  const dsqCodes = getDsqCodesForRace(raceNumber)
+  return entries.some((entry) => dsqCodes.has(entry.code))
+}
+
+function hasAmmonitionPenalty(entries: PenaltyEntry[] = [], raceNumber: number): boolean {
+  const ammonitionCodes = getAmmonitionCodesForRace(raceNumber)
+  return entries.some((entry) => ammonitionCodes.has(entry.code))
+}
+
+function totalPenaltySeconds(entries: PenaltyEntry[] = [], raceNumber: number): number {
+  return entries.reduce((sum, entry) => sum + penaltySecondsFromCode(entry.code, raceNumber), 0)
 }
 
 function createPenaltyEntry(): PenaltyEntry {
@@ -556,27 +619,29 @@ function formatPenaltyDetail(entry: PenaltyEntry): string {
   return `${entry.code} ${entry.lap} ${entry.minute}:${entry.second}`
 }
 
-function getPenaltyOptionText(code: string): string {
-  const rule = getPenaltyRule(code)
+function getPenaltyOptionText(code: string, raceNumber: number): string {
+  const rule = getPenaltyRule(code, raceNumber)
 
   if (rule.effect === "ammonition") return `${code} (Ammonizione)`
-  if (rule.effect === "dsq") return `${code} (DSQ)`
-  if (rule.effect === "other") return `${code} (-)`
+  if (rule.effect === "dsq") return `${code} (${rule.shortLabel})`
+  if (rule.effect === "other") return `${code} (${rule.shortLabel})`
 
   return `${code} (${formatPenaltyOptionLabel(rule.seconds)})`
 }
 
-function getPenaltyMainDisplay(entries: PenaltyEntry[] = []): {
+function getPenaltyMainDisplay(entries: PenaltyEntry[] = [], raceNumber: number): {
   kind: "none" | "time" | "ammonition" | "dsq"
   text: string
 } {
   if (!entries.length) return { kind: "none", text: "-" }
-  if (hasDsqPenalty(entries)) return { kind: "dsq", text: "DSQ" }
+  if (hasDsqPenalty(entries, raceNumber)) return { kind: "dsq", text: "DSQ" }
 
-  const total = totalPenaltySeconds(entries)
+  const total = totalPenaltySeconds(entries, raceNumber)
   if (total > 0) return { kind: "time", text: formatPenaltyDisplay(total) }
 
-  if (hasAmmonitionPenalty(entries)) return { kind: "ammonition", text: "00:00.000" }
+  if (hasAmmonitionPenalty(entries, raceNumber)) {
+    return { kind: "ammonition", text: "00:00.000" }
+  }
 
   return { kind: "none", text: "-" }
 }
@@ -613,6 +678,33 @@ function normalizeDriverLookupName(value: string) {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "")
+}
+
+function applyQualiRaceAliasToRows(
+  rows: ExtractRow[],
+  qualiRows: QualiRow[],
+  fromQualiName: string,
+  toRaceName: string
+): ExtractRow[] {
+  const quali = qualiRows.find(
+    (q) => normalizeDriverLookupName(q.pilota) === normalizeDriverLookupName(fromQualiName)
+  )
+
+  if (!quali) return rows
+
+  return rows.map((row) => {
+    const isTargetRacePilot =
+      normalizeDriverLookupName(row.pilota) === normalizeDriverLookupName(toRaceName)
+
+    const isOldPole =
+      (row.pole || "").trim().toUpperCase() === "POLE"
+
+    return {
+      ...row,
+      tempoQualifica: isTargetRacePilot ? quali.tempo : row.tempoQualifica,
+      pole: isTargetRacePilot ? "POLE" : isOldPole ? "" : row.pole,
+    }
+  })
 }
 
 function levenshteinDistance(a: string, b: string): number {
@@ -2235,6 +2327,7 @@ function renderPrtMetaCell({
 function renderPrtPenaltyCell({
   row,
   penalties,
+  raceNumber,
   exporting = false,
   unionMode,
   exportHasMultiPenalty,
@@ -2242,6 +2335,7 @@ function renderPrtPenaltyCell({
 }: {
   row: DisplayRow
   penalties: PenaltyMap
+  raceNumber: number
   exporting?: boolean
   unionMode: boolean
   exportHasMultiPenalty: boolean
@@ -2249,7 +2343,7 @@ function renderPrtPenaltyCell({
 }) {
   const key = getPrtRowStableKey(row.sourcePosGara)
   const penaltyEntries = penalties[key] || []
-  const penaltyMain = getPenaltyMainDisplay(penaltyEntries)
+  const penaltyMain = getPenaltyMainDisplay(penaltyEntries, raceNumber)
   const isDsqRow = (row.tempoTotaleGara || "").trim().toUpperCase() === "DSQ"
 const isRecoveredDsqRow = row.sourcePosGara >= 9000
 const showPenaltyDetail = !(exporting && unionMode)
@@ -2289,7 +2383,7 @@ if (isDsqRow || isRecoveredDsqRow || penaltyMain.kind === "dsq") {
 
   if (penaltyEntries.length === 1) {
     const entry = penaltyEntries[0]
-    const rule = getPenaltyRule(entry.code)
+    const rule = getPenaltyRule(entry.code, raceNumber)
 
     if (exportHasMultiPenalty) {
       return (
@@ -2598,7 +2692,7 @@ if (isDsqRow || isRecoveredDsqRow || penaltyMain.kind === "dsq") {
             )
           }
 
-          if (hasDsqPenalty(penaltyEntries)) {
+          if (hasDsqPenalty(penaltyEntries, raceNumber)) {
             return <Pill left="DSQ" variant="dsq" />
           }
 
@@ -2623,7 +2717,7 @@ if (isDsqRow || isRecoveredDsqRow || penaltyMain.kind === "dsq") {
         }}
       >
         {penaltyEntries.slice(0, 4).map((entry) => {
-          const rule = getPenaltyRule(entry.code)
+          const rule = getPenaltyRule(entry.code, raceNumber)
 
           return (
             <div
@@ -2924,6 +3018,7 @@ function ResultsTable({
   unionMode,
   exporting = false,
   penalties,
+  raceNumber,
   forceHideMeta = false,
   tableTitle = "Classifica (output)",
 }: {
@@ -2934,6 +3029,7 @@ function ResultsTable({
   unionMode: boolean
   exporting?: boolean
   penalties: PenaltyMap
+  raceNumber: number
   forceHideMeta?: boolean
   tableTitle?: string
 }) {
@@ -3272,13 +3368,14 @@ const rowStyle = getPrtTableRowStyle(
                     }}
                   >
                     {renderPrtPenaltyCell({
-                      row: r,
-                      penalties,
-                      exporting,
-                      unionMode,
-                      exportHasMultiPenalty,
-                      exportPenaltyTimeTextStyle,
-                    })}
+  row: r,
+  penalties,
+  raceNumber,
+  exporting,
+  unionMode,
+  exportHasMultiPenalty,
+  exportPenaltyTimeTextStyle,
+})}
                   </TableCell>
 
                   <TableCell
@@ -3372,6 +3469,7 @@ export default function Page() {
   const [files, setFiles] = useState<File[]>([])
   const [csv, setCsv] = useState("")
   const [rows, setRows] = useState<ExtractRow[]>([])
+  const [qualiRows, setQualiRows] = useState<QualiRow[]>([])
   const [unionMeta, setUnionMeta] = useState<UnionMeta>({ gara: "", lobby: "", lega: "" })
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -3449,7 +3547,9 @@ function cloneDriverLeagueMap(source: DriverLeagueMap): DriverLeagueMap {
 
 const [driverAliasMap, setDriverAliasMap] = useState<DriverAliasMap>({
   ELITE: {},
-  PLATINUM: {},
+  PLATINUM: {
+    focuss: "JM_focuss_71",
+  },
   MASTER: {},
   PRO: {},
   GT: {},
@@ -3459,6 +3559,9 @@ const [driverRatingMap, setDriverRatingMap] = useState<Record<string, DriverRati
 
 const [unknownDriverSelections, setUnknownDriverSelections] = useState<Record<string, string>>({})
 const [dismissedUnknownDrivers, setDismissedUnknownDrivers] = useState<Record<string, true>>({})
+const [pendingQualiAliasName, setPendingQualiAliasName] = useState("")
+const [pendingQualiAliasTarget, setPendingQualiAliasTarget] = useState("")
+const [dismissedQualiAliasNames, setDismissedQualiAliasNames] = useState<Record<string, true>>({})
 
 const [uploadedLeagueHtmls, setUploadedLeagueHtmls] = useState<
   Partial<Record<ChampionshipLeagueKey, string>>
@@ -3477,6 +3580,20 @@ const [movementDraftTargetLeague, setMovementDraftTargetLeague] =
   useState<ChampionshipLeagueKey>("ELITE")
 const [movementDrawerAction, setMovementDrawerAction] =
   useState<MovementDrawerAction>("move")
+  const [pendingMovementEntry, setPendingMovementEntry] =
+  useState<LeagueMovementEntry | null>(null)
+
+const [showMovementBaseModal, setShowMovementBaseModal] =
+  useState(false)
+
+const [movementBaseMode, setMovementBaseMode] =
+  useState<"detected" | "manual">("detected")
+
+const [movementManualBasePoints, setMovementManualBasePoints] =
+  useState("")
+
+const [detectedMovementBasePoints, setDetectedMovementBasePoints] =
+  useState(0)
 
 const [movementDraftTargetDriver, setMovementDraftTargetDriver] = useState("")
 const [editingRaceCell, setEditingRaceCell] = useState<{
@@ -3548,20 +3665,22 @@ const normalizedGaraForOutput = useMemo(() => {
   return raw
 }, [effectiveGara])
 
-  const penaltyCodeOptions = useMemo(
-    () => [
-      { value: "DSQ", label: "DSQ (Squalifica)" },
-      ...Array.from({ length: 39 }, (_, i) => {
-        const n = i + 1
-        const code = `P${String(n).padStart(2, "0")}`
-        return {
-          value: code,
-          label: getPenaltyOptionText(code),
-        }
-      }),
-    ],
-    []
-  )
+  const penaltyCodeOptions = useMemo(() => {
+  const maxPenaltyCode = currentRace >= 6 ? 32 : 39
+
+  return [
+    { value: "DSQ", label: "DSQ (Squalifica)" },
+    ...Array.from({ length: maxPenaltyCode }, (_, i) => {
+      const n = i + 1
+      const code = `P${String(n).padStart(2, "0")}`
+
+      return {
+        value: code,
+        label: getPenaltyOptionText(code, currentRace),
+      }
+    }),
+  ]
+}, [currentRace])
 
   const lapOptions = useMemo(
     () => [
@@ -6292,9 +6411,9 @@ function resetBaselineDraft() {
         } else {
           const bestMatch = findBestOfficialPilotMatch(resolvedPilot, officialLeaguePilots)
 
-          if (bestMatch?.isSafeAutoMatch) {
-            resolvedPilot = bestMatch.officialName
-          } else if (normalizedRaw) {
+          if (bestMatch?.isSafeAutoMatch && bestMatch.score >= 0.96) {
+  resolvedPilot = bestMatch.officialName
+} else if (normalizedRaw) {
             const unresolvedId = `${selectedLeague}:${normalizedRaw}`
 
             if (!dismissedUnknownDrivers[unresolvedId] && !unresolvedMap.has(unresolvedId)) {
@@ -6329,12 +6448,64 @@ function resetBaselineDraft() {
     }
   })
 
+    for (const q of qualiRows) {
+    const qualiName = String(q.pilota || "").trim()
+    if (!qualiName) continue
+
+    const normalizedRaw = normalizeDriverLookupName(qualiName)
+    if (!normalizedRaw) continue
+
+    const alreadyOfficial = officialLeaguePilots.some(
+      (pilot) => normalizeDriverLookupName(pilot) === normalizedRaw
+    )
+
+    const alreadyAlias = !!aliasMapForLeague[normalizedRaw]
+
+    const alreadyInRaceAsOfficialOrAlias = baseRows.some((row) => {
+  const rowKey = normalizeDriverLookupName(row.pilota)
+
+  return (
+    rowKey === normalizedRaw &&
+    (
+      officialLeaguePilots.some(
+        (pilot) => normalizeDriverLookupName(pilot) === rowKey
+      ) ||
+      !!aliasMapForLeague[rowKey]
+    )
+  )
+})
+
+    const hasTime = String(q.tempo || "").trim().length > 0
+
+    if (
+      hasTime &&
+      !alreadyOfficial &&
+      !alreadyAlias &&
+      !alreadyInRaceAsOfficialOrAlias
+    ) {
+      const bestMatch = findBestOfficialPilotMatch(qualiName, officialLeaguePilots)
+      const unresolvedId = `${selectedLeague}:${normalizedRaw}`
+
+      if (!dismissedUnknownDrivers[unresolvedId] && !unresolvedMap.has(unresolvedId)) {
+        unresolvedMap.set(unresolvedId, {
+          id: unresolvedId,
+          rawName: qualiName,
+          normalizedRawName: normalizedRaw,
+          league: selectedLeague,
+          suggestedOfficialName: bestMatch?.officialName || "",
+          suggestedScore: bestMatch?.score || 0,
+        })
+      }
+    }
+  }
+
   return {
     baseRows,
     unresolvedCandidates: Array.from(unresolvedMap.values()),
   }
 }, [
   previewRows,
+  qualiRows,
   manualPilotOverrides,
   manualAutoOverrides,
   manualDistaccoOverrides,
@@ -6528,7 +6699,7 @@ const presentPilotKeys = new Set(
     const upperTempo = rawTempo.trim().toUpperCase()
     const isBaseDnf = upperTempo === "DNF" || upperTempo === "DNF-I"
     const dnfValue = isBaseDnf ? dnfOverrides[key] || (upperTempo === "DNF-I" ? "DNF-I" : "DNF") : null
-        const rowHasDsqPenalty = hasDsqPenalty(penalties[key] || [])
+        const rowHasDsqPenalty = hasDsqPenalty(penalties[key] || [], currentRace)
 
         if (rowHasDsqPenalty) {
           return {
@@ -6603,7 +6774,7 @@ const presentPilotKeys = new Set(
     for (let i = 0; i < orderedRows.length; i++) {
       const row = orderedRows[i]
       const key = getPrtRowStableKey(row.sourcePosGara)
-      const rowHasDsqPenalty = hasDsqPenalty(penalties[key] || [])
+      const rowHasDsqPenalty = hasDsqPenalty(penalties[key] || [], currentRace)
       const isDsq =
         (row.tempoTotaleGara || "").trim().toUpperCase() === "DSQ" || rowHasDsqPenalty
 
@@ -6618,7 +6789,7 @@ const presentPilotKeys = new Set(
         continue
       }
 
-      const penaltySec = totalPenaltySeconds(penalties[key] || [])
+      const penaltySec = totalPenaltySeconds(penalties[key] || [], currentRace)
 
       comparable.push({
         orderedIndex: i,
@@ -7040,24 +7211,86 @@ useEffect(() => {
   }
 }, [movementDraftLeague, movementDraftDriverName, driverLeagueMap])
 
+function getPreviousMovementCheckpoint(round: number) {
+  if (round === 6) return 3
+  if (round === 9) return 6
+  if (round === 12) return 9
+  return 0
+}
+
+function getDetectedBasePointsForMovement(driverName: string, movementRound: number) {
+  const checkpoint = getPreviousMovementCheckpoint(movementRound)
+  if (checkpoint <= 0) return 0
+
+  const driverKey = normalizeDriverNameForChampionship(driverName)
+  const driver = driverChampionship.find(
+    (item) => normalizeDriverNameForChampionship(item.pilota) === driverKey
+  )
+
+  if (!driver) return 0
+
+  return Object.entries(driver.racePoints).reduce((sum, [race, points]) => {
+    const raceNumber = Number(race)
+    return raceNumber <= checkpoint ? sum + points : sum
+  }, 0)
+}
+
 function submitMovementDraft() {
   const cleanDriverName = String(movementDraftDriverName || "").trim()
   if (!cleanDriverName) return
 
   const createdEntry: LeagueMovementEntry = {
-  driverName: cleanDriverName,
-  fromLeague: movementDraftLeague,
-  toLeague: movementDraftTargetLeague,
-  type: movementDraftType,
-  drawerAction: movementDrawerAction,
-  targetDriverName: movementDraftTargetDriver || null,
+    driverName: cleanDriverName,
+    fromLeague: movementDraftLeague,
+    toLeague: movementDraftTargetLeague,
+    type: movementDraftType,
+    drawerAction: movementDrawerAction,
+    targetDriverName: movementDraftTargetDriver || null,
+    basePointsOverride: null,
+  }
+
+  const previousCheckpoint = getPreviousMovementCheckpoint(currentRace)
+
+  if (previousCheckpoint > 0) {
+    const detectedBase = getDetectedBasePointsForMovement(cleanDriverName, currentRace)
+
+    setPendingMovementEntry(createdEntry)
+    setDetectedMovementBasePoints(detectedBase)
+    setMovementManualBasePoints(String(detectedBase))
+    setMovementBaseMode("detected")
+    setShowMovementBaseModal(true)
+    return
+  }
+
+  addRoundMovementEntry(movementDraftLeague, createdEntry)
+  setLastCreatedMovement(createdEntry)
+
+  resetMovementDraft(movementDraftLeague)
+  setShowMovementCreatedModal(true)
 }
 
-addRoundMovementEntry(movementDraftLeague, createdEntry)
-setLastCreatedMovement(createdEntry)
+function confirmPendingMovementWithBase() {
+  if (!pendingMovementEntry) return
 
-resetMovementDraft(movementDraftLeague)
-setShowMovementCreatedModal(true)
+  const manualValue = Number(movementManualBasePoints)
+  const finalBase =
+    movementBaseMode === "manual" && Number.isFinite(manualValue)
+      ? manualValue
+      : detectedMovementBasePoints
+
+  const completedEntry: LeagueMovementEntry = {
+    ...pendingMovementEntry,
+    basePointsOverride: finalBase,
+  }
+
+  addRoundMovementEntry(completedEntry.fromLeague, completedEntry)
+  setLastCreatedMovement(completedEntry)
+
+  resetMovementDraft(completedEntry.fromLeague)
+
+  setPendingMovementEntry(null)
+  setShowMovementBaseModal(false)
+  setShowMovementCreatedModal(true)
 }
 
 function applySingleMovementToDrawer(entry: LeagueMovementEntry) {
@@ -7592,21 +7825,43 @@ for (const driver of map.values()) {
     }
   }
 
-  const g1Cell = driver.raceResults[1] || null
-  const g2Cell = driver.raceResults[2] || null
-  const g3Cell = driver.raceResults[3] || null
-
-  const g1Points = driver.racePoints[1] ?? 0
-  const g2Points = driver.racePoints[2] ?? 0
-  const g3Points = driver.racePoints[3] ?? 0
-
   const activeMovement = (() => {
-  if (currentRace < 3) return null
+  const movementRounds = [12, 9, 6, 3]
 
-  const round3Movements = championshipState.roundMovements?.[3] || {}
+  for (const movementRound of movementRounds) {
+    if (currentRace < movementRound) continue
+
+    const movementState = championshipState.roundMovements?.[movementRound] || {}
+
+    for (const league of CHAMPIONSHIP_LEAGUES) {
+      const entries = movementState[league] || []
+
+      for (const entry of entries) {
+        const key = normalizeDriverNameForChampionship(entry.driverName)
+
+        if (key === driverKey) {
+          return {
+            entry,
+            movementRound,
+          }
+        }
+      }
+    }
+  }
+
+  return null
+})()
+
+if (activeMovement) {
+  const movementType = activeMovement.entry.type
+  const movementRound = activeMovement.movementRound
+  const multiplier = movementType === "promote" ? 0.6 : 1.5
+
+  function getMovementForRound(round: number) {
+  const movementState = championshipState.roundMovements?.[round] || {}
 
   for (const league of CHAMPIONSHIP_LEAGUES) {
-    const entries = round3Movements[league] || []
+    const entries = movementState[league] || []
 
     for (const entry of entries) {
       const key = normalizeDriverNameForChampionship(entry.driverName)
@@ -7618,46 +7873,73 @@ for (const driver of map.values()) {
   }
 
   return null
-})()
+}
 
-if (currentRace >= 3 && activeMovement) {
-  const movementType = activeMovement.type
-  const multiplier = movementType === "promote" ? 0.6 : 1.5
+function getRacePoints(raceNumber: number) {
+  return driver.racePoints[raceNumber] || 0
+}
 
-  const recalculatedG2 = Math.ceil(g2Points * multiplier)
-  const recalculatedG3 = Math.ceil(g3Points * multiplier)
+function getCorrectTotalUntilRound(untilRound: number) {
+    
+  let total = 0
+  let previousCheckpoint = 0
 
-  // G1 resta sempre invariata
-  const laterPoints = Object.entries(driver.racePoints).reduce((sum, [race, points]) => {
-    const raceNumber = Number(race)
-    return raceNumber >= 4 ? sum + points : sum
-  }, 0)
+  for (const checkpoint of [3, 6, 9, 12]) {
+    if (checkpoint > untilRound) break
 
-  driver.totalPoints = g1Points + recalculatedG2 + recalculatedG3 + laterPoints
+    const movement = getMovementForRound(checkpoint)
 
-    if (g1Cell) {
-      driver.raceResults[1] = {
-        ...g1Cell,
-        specialMovement: movementType,
-      }
+    const blockPoints = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+      .filter((raceNumber) => raceNumber > previousCheckpoint && raceNumber <= checkpoint)
+      .reduce((sum, raceNumber) => sum + getRacePoints(raceNumber), 0)
+
+    if (movement) {
+      const multiplier = movement.type === "promote" ? 0.6 : 1.5
+      total += Math.ceil(blockPoints * multiplier)
+    } else {
+      total += blockPoints
     }
 
-    if (g2Cell) {
-      driver.raceResults[2] = {
-        ...g2Cell,
-        specialMovement: movementType,
-      }
-    }
-
-    if (g3Cell) {
-      driver.raceResults[3] = {
-        ...g3Cell,
-        specialMovement: movementType,
-      }
-    }
-  } else {
-    driver.totalPoints = Object.values(driver.racePoints).reduce((a, b) => a + b, 0)
+    previousCheckpoint = checkpoint
   }
+
+  const remainingPoints = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+    .filter((raceNumber) => raceNumber > previousCheckpoint && raceNumber <= untilRound)
+    .reduce((sum, raceNumber) => sum + getRacePoints(raceNumber), 0)
+
+  return total + remainingPoints
+}
+
+const baseUntilRace = movementRound - 3
+
+const basePoints =
+  activeMovement.entry.basePointsOverride != null
+    ? activeMovement.entry.basePointsOverride
+    : getCorrectTotalUntilRound(baseUntilRace)
+const recalculationPointsFull = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+  .filter((raceNumber) => raceNumber > baseUntilRace && raceNumber <= movementRound)
+  .reduce((sum, raceNumber) => sum + getRacePoints(raceNumber), 0)
+
+const afterMovementPoints = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+  .filter((raceNumber) => raceNumber > movementRound)
+  .reduce((sum, raceNumber) => sum + getRacePoints(raceNumber), 0)
+
+  driver.totalPoints =
+    basePoints +
+    Math.ceil(recalculationPointsFull * multiplier) +
+    afterMovementPoints
+
+  const movementCell = driver.raceResults[movementRound]
+
+  if (movementCell) {
+    driver.raceResults[movementRound] = {
+      ...movementCell,
+      specialMovement: movementType,
+    }
+  }
+} else {
+  driver.totalPoints = Object.values(driver.racePoints).reduce((a, b) => a + b, 0)
+}
 }
 // Frecce storiche promo/retro: solo grafica, non modifica punti
 for (const movementRound of [3, 6, 9, 12]) {
@@ -7689,9 +7971,21 @@ for (const movementRound of [3, 6, 9, 12]) {
   applyFourthDnpAsDsqRule(driver)
 }
 
+const activeDrawerDrivers = new Set(
+  CHAMPIONSHIP_LEAGUES.flatMap((league) =>
+    (driverLeagueMap[league] || []).map((pilot) =>
+      normalizeDriverNameForChampionship(pilot)
+    )
+  )
+)
+
 return Array.from(map.values())
   .filter((driver) => {
-  const disqualificationRace = getDnpDisqualificationRace(driver)
+    const driverKey = normalizeDriverNameForChampionship(driver.pilota)
+
+    if (!activeDrawerDrivers.has(driverKey)) return false
+
+    const disqualificationRace = getDnpDisqualificationRace(driver)
 
   // Se non è mai stato squalificato → resta
   if (disqualificationRace == null) return true
@@ -9786,25 +10080,66 @@ async function run(targetLeague?: ChampionshipLeagueKey) {
       setError(JSON.stringify(data, null, 2))
     } else {
       setCsv(data.csv || "")
-      setRows(Array.isArray(data.rows) ? data.rows : [])
-      setUnionMeta(
-        data.unionMeta && typeof data.unionMeta === "object"
-          ? {
-              gara: data.unionMeta.gara || "",
-              lobby: data.unionMeta.lobby || "",
-              lega: data.unionMeta.lega || "",
-            }
-          : { gara: "", lobby: "", lega: "" }
-      )
 
-      const detectedLeague = normalizeLeagueKey(
-        data.unionMeta && typeof data.unionMeta === "object"
-          ? data.unionMeta.lega || ""
-          : ""
-      )
+const extractedRows: ExtractRow[] = Array.isArray(data.rows)
+  ? data.rows
+  : []
 
-      const effectiveImportLeague =
-        targetLeague || detectedLeague || selectedLeague
+const extractedQualiRows: QualiRow[] = Array.isArray(data.qualiRows)
+  ? data.qualiRows
+  : []
+
+const nextUnionMeta =
+  data.unionMeta && typeof data.unionMeta === "object"
+    ? {
+        gara: data.unionMeta.gara || "",
+        lobby: data.unionMeta.lobby || "",
+        lega: data.unionMeta.lega || "",
+      }
+    : { gara: "", lobby: "", lega: "" }
+
+setUnionMeta(nextUnionMeta)
+
+const detectedLeague = normalizeLeagueKey(nextUnionMeta.lega)
+
+const effectiveImportLeague =
+  targetLeague || detectedLeague || selectedLeague
+
+let rowsWithAliases = extractedRows
+
+const aliasMapForLeague =
+  driverAliasMap[effectiveImportLeague] || {}
+
+for (const [rawAliasKey, officialName] of Object.entries(aliasMapForLeague)) {
+  const official = String(officialName)
+
+  const quali = extractedQualiRows.find(
+    (q: QualiRow) => normalizeDriverLookupName(q.pilota) === rawAliasKey
+  )
+
+  if (quali) {
+    rowsWithAliases = applyQualiRaceAliasToRows(
+      rowsWithAliases,
+      extractedQualiRows,
+      quali.pilota,
+      official
+    )
+  }
+
+  rowsWithAliases = rowsWithAliases.map((row: ExtractRow) => {
+    const rowKey = normalizeDriverLookupName(row.pilota)
+
+    if (rowKey !== rawAliasKey) return row
+
+    return {
+      ...row,
+      pilota: official,
+    }
+  })
+}
+
+setRows(rowsWithAliases)
+setQualiRows(extractedQualiRows)
 
       if (effectiveImportLeague) {
         setSelectedLeague(effectiveImportLeague)
@@ -11732,6 +12067,7 @@ const lastCreatedMovementText = useMemo(() => {
     prtMode={prtMode}
     unionMode={unionMode}
     penalties={penalties}
+    raceNumber={currentRace}
     tableTitle="Classifica (output)"
   />
 )}
@@ -12004,7 +12340,7 @@ const lastCreatedMovementText = useMemo(() => {
           {dgInfo.map(({ row, isDoppiato, isDnf, key, manualGap, manualGapValid }, idx) => {
             const dnfValue = dnfOverrides[key] || "DNF"
             const entries = penalties[key] || []
-            const penaltyMain = getPenaltyMainDisplay(entries)
+            const penaltyMain = getPenaltyMainDisplay(entries, currentRace)
             const penaltyDisabled = false
 
             return (
@@ -13828,6 +14164,27 @@ const lastCreatedMovementText = useMemo(() => {
       activeUnknownDriver.rawName,
       selectedOfficial
     )
+    setRows((prev) => {
+  const rawKey = normalizeDriverLookupName(activeUnknownDriver.rawName)
+
+  const renamedRows = prev.map((row: ExtractRow) => {
+    const rowKey = normalizeDriverLookupName(row.pilota)
+
+    if (rowKey !== rawKey) return row
+
+    return {
+      ...row,
+      pilota: selectedOfficial,
+    }
+  })
+
+  return applyQualiRaceAliasToRows(
+    renamedRows,
+    qualiRows,
+    activeUnknownDriver.rawName,
+    selectedOfficial
+  )
+})
 
     setUnknownDriverSelections((prev) => {
       const next = { ...prev }
@@ -14158,6 +14515,122 @@ const lastCreatedMovementText = useMemo(() => {
     </div>
   </div>
 )}
+      {showMovementBaseModal && pendingMovementEntry ? (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 9999,
+      background: "rgba(0,0,0,0.72)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+    }}
+  >
+    <div
+      style={{
+        width: "min(560px, 100%)",
+        borderRadius: 24,
+        border: "1px solid rgba(255,255,255,0.16)",
+        background: "linear-gradient(180deg, rgba(18,18,24,0.98), rgba(5,5,8,0.98))",
+        boxShadow: "0 24px 90px rgba(0,0,0,0.65)",
+        padding: 22,
+        color: "white",
+      }}
+    >
+      <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 14 }}>
+        PROMOZIONE / RETROCESSIONE — Gara {currentRace}
+      </div>
+
+      <div style={{ lineHeight: 1.8, fontSize: 15 }}>
+        <div><b>Pilota:</b> {pendingMovementEntry.driverName}</div>
+        <div><b>Da:</b> {pendingMovementEntry.fromLeague}</div>
+        <div><b>A:</b> {pendingMovementEntry.toLeague}</div>
+      </div>
+
+      <div style={{ marginTop: 18, fontSize: 15 }}>
+        Totale consolidato dopo Gara {getPreviousMovementCheckpoint(currentRace)} rilevato:
+      </div>
+
+      <div
+        style={{
+          marginTop: 8,
+          padding: "12px 14px",
+          borderRadius: 14,
+          background: "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.14)",
+          fontSize: 24,
+          fontWeight: 900,
+        }}
+      >
+        {detectedMovementBasePoints}
+      </div>
+
+      <div style={{ marginTop: 18, display: "grid", gap: 10 }}>
+        <label>
+          <input
+            type="radio"
+            checked={movementBaseMode === "detected"}
+            onChange={() => setMovementBaseMode("detected")}
+          />{" "}
+          Sì, conferma
+        </label>
+
+        <label>
+          <input
+            type="radio"
+            checked={movementBaseMode === "manual"}
+            onChange={() => setMovementBaseMode("manual")}
+          />{" "}
+          No, inserisco manualmente
+        </label>
+      </div>
+
+      {movementBaseMode === "manual" ? (
+        <div style={{ marginTop: 14 }}>
+          <div style={{ marginBottom: 6, fontWeight: 800 }}>
+            Inserisci punteggio consolidato:
+          </div>
+          <input
+            value={movementManualBasePoints}
+            onChange={(e) => setMovementManualBasePoints(e.target.value)}
+            type="number"
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.20)",
+              background: "rgba(0,0,0,0.35)",
+              color: "white",
+              fontSize: 18,
+              fontWeight: 800,
+            }}
+          />
+        </div>
+      ) : null}
+
+      <div style={{ marginTop: 22, display: "flex", justifyContent: "flex-end", gap: 10 }}>
+        <button
+          type="button"
+          onClick={() => {
+            setPendingMovementEntry(null)
+            setShowMovementBaseModal(false)
+          }}
+        >
+          Annulla
+        </button>
+
+        <button
+          type="button"
+          onClick={confirmPendingMovementWithBase}
+        >
+          Conferma movimento
+        </button>
+      </div>
+    </div>
+  </div>
+) : null} 
       {showApplyMovementsModal && (
   <div
     style={{
@@ -15391,6 +15864,7 @@ const changed = currentValue !== originalValue
           unionMode={unionMode}
           exporting={true}
           penalties={penalties}
+          raceNumber={currentRace}
           forceHideMeta={!exportMetaInPng}
           tableTitle="Classifica definitiva"
         />

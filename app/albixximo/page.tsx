@@ -10393,8 +10393,6 @@ setUploadedLeagueHtmls(
 }
 
 function handleSelectLeague(league: ChampionshipLeagueKey) {
-  setSelectedLeague(league)
-  setManualLegaOverride(league)
   setUnknownDriverSelections({})
   setDismissedUnknownDrivers({})
 
@@ -10405,7 +10403,10 @@ function handleSelectLeague(league: ChampionshipLeagueKey) {
     return
   }
 
-  clearCurrentWorkbench(true)
+  clearCurrentWorkbench(false)
+
+  setSelectedLeague(league)
+  setManualLegaOverride(league)
 }
 
 function applyBulkPilotsToLeagueDrawer(league: ChampionshipLeagueKey) {
