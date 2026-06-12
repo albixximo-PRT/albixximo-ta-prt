@@ -347,7 +347,6 @@ const KNOWN_CARS = [
   "RCZ Gr.B Rally Car",
   "Lancer Evolution Final Gr.B Rally Car",
   "WRX Gr.B Rally Car",
-  "Focus Gr.B Rally Car",
   "GT-R Gr.B Rally Car",
   "NSX Gr.B Rally Car",
   "86 Gr.B Rally Car",
@@ -359,6 +358,7 @@ const KNOWN_CARS = [
   "Mercedes-AMG GT3 '20",
   "911 RSR (991) '17",
   "GR Supra Racing Concept '18",
+  "F3500-B",
 ]
 
 function normalizeCarLoose(s: string) {
@@ -414,6 +414,7 @@ function looksLikeKnownCarToken(s: string) {
   if (!t) return false
 
   return (
+    t.includes("f3500-b") ||
         t.includes("ts050") ||
     t.includes("919 hybrid") ||
     t.includes("gr010") ||
@@ -425,7 +426,6 @@ function looksLikeKnownCarToken(s: string) {
     t.includes("rcz") ||
     t.includes("lancer evolution") ||
     t.includes("wrx") ||
-    t.includes("focus") ||
     t.includes("gr.4") ||
     t.includes("gr4") ||
     t.includes("gt4") ||
@@ -888,6 +888,7 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
   const looksLikeModel = (s: string) => {
     const t = normalizeCarLoose(s)
     return (
+      t.includes("f3500-b") ||
       /\b(gt3|rsr|lms|evo)\b/i.test(t) ||
       /\br8\b/i.test(t) ||
       /\b911\b/i.test(t) ||
@@ -926,6 +927,7 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
     /\bGT3\b/i.test(s) ||
     /\bGr\.?4\b/i.test(s) ||
     /\bGr\.?B\b/i.test(s) ||
+      /F3500-B/i.test(s) ||
     /Rally\s+Car/i.test(s)
 
   const isCompleteCar = (s: string) => looksLikeModel(s) && hasId(s)
@@ -933,6 +935,7 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
   const looksLikeCarStart = (tok: string) => {
     const t = normalizeCarLoose(tok)
     return (
+      t.includes("f3500-b") ||
       t === "911" ||
       t === "r8" ||
       /^911\b/.test(t) ||
