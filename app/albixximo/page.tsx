@@ -10546,10 +10546,13 @@ function addPilotToLeagueDrawer(league: ChampionshipLeagueKey) {
   }))
 }
 
-function removePilotFromLeagueDrawer(league: ChampionshipLeagueKey, pilotName: string) {
+function removePilotFromLeagueDrawer(
+  league: ChampionshipLeagueKey,
+  pilotName: string
+) {
   const target = normalizeDriverNameForChampionship(pilotName)
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -10559,7 +10562,8 @@ function removePilotFromLeagueDrawer(league: ChampionshipLeagueKey, pilotName: s
     }
 
     next[league] = next[league].filter(
-      (pilot) => normalizeDriverNameForChampionship(pilot) !== target
+      (pilot) =>
+        normalizeDriverNameForChampionship(pilot) !== target
     )
 
     return next
@@ -10586,7 +10590,10 @@ function removeDsqDriversFromDrawer() {
 
     for (const league of CHAMPIONSHIP_LEAGUES) {
       next[league] = next[league].filter(
-        (pilot) => !keysToRemove.has(normalizeDriverNameForChampionship(pilot))
+        (pilot) =>
+          !keysToRemove.has(
+            normalizeDriverNameForChampionship(pilot)
+          )
       )
     }
 
