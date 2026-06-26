@@ -358,6 +358,7 @@ const KNOWN_CARS = [
   "Mercedes-AMG GT3 '20",
   "911 RSR (991) '17",
   "GR Supra Racing Concept '18",
+  "S-FR Racing Concept '16",
   "F3500-B",
 ]
 
@@ -455,6 +456,8 @@ function looksLikeKnownCarToken(s: string) {
     t.includes("(991)") ||
     t.includes("supra racing concept") ||
     t.includes("gr supra") ||
+    t.includes("s-fr") ||
+t.includes("racing concept") ||
     t.includes("silvia") ||
     t.includes("touring car") ||
     t.includes("tt cup") ||
@@ -912,6 +915,8 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
       t.includes("gt-r") ||
       t.includes("650s") ||
       t.includes("atenza") ||
+      t.includes("s-fr") ||
+t.includes("racing concept") ||
       t.includes("silvia") ||
       t.includes("touring car") ||
       t.includes("tt cup") ||
