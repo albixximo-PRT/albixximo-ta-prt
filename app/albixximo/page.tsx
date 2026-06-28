@@ -8860,6 +8860,88 @@ try {
   border-radius: 14px;
 }
 
+.race-dg-panel {
+  display: none;
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,215,0,0.22);
+  background:
+    radial-gradient(700px 220px at 12% 0%, rgba(255,215,0,0.14), transparent 55%),
+    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.22));
+  box-shadow: 0 12px 36px rgba(0,0,0,0.28);
+}
+
+.race-dg-panel.visible {
+  display: grid;
+  gap: 12px;
+}
+
+.race-dg-title {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+.race-dg-subtitle {
+  font-size: 12px;
+  opacity: 0.74;
+  font-weight: 700;
+}
+
+.race-dg-list {
+  display: grid;
+  gap: 10px;
+}
+
+.race-dg-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.22);
+}
+
+.race-dg-pilot {
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+
+.race-dg-meta {
+  font-size: 12px;
+  opacity: 0.72;
+  font-weight: 700;
+}
+
+.dg-penalty-btn {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 8px 13px;
+  color: white;
+  font-weight: 900;
+  letter-spacing: 0.7px;
+  box-shadow: 0 0 18px rgba(0,0,0,0.28);
+}
+
+.dg-penalty-btn.time {
+  background: linear-gradient(180deg, #ef4444, #991b1b);
+}
+
+.dg-penalty-btn.ammonition {
+  background: linear-gradient(180deg, #f59e0b, #b45309);
+}
+
+.dg-penalty-btn.dsq {
+  background: linear-gradient(180deg, #a855f7, #6b21a8);
+}
+
 .race-png-viewer.loading::before {
   content: "Caricamento...";
   display: block;
@@ -9718,8 +9800,10 @@ try {
   <div class="race-png-tabs" id="racePngTabs"></div>
 
   <div class="race-png-viewer" id="racePngViewer">
-    <img id="racePngImage" src="" alt="Classifica gara" />
-  </div>
+  <img id="racePngImage" src="" alt="Classifica gara" />
+</div>
+
+<div class="race-dg-panel" id="raceDgPanel"></div>
 </div>
 
     <div class="viewer-shell">
@@ -9780,6 +9864,7 @@ try {
 const racePngTabs = document.getElementById("racePngTabs");
 const racePngViewer = document.getElementById("racePngViewer");
 const racePngImage = document.getElementById("racePngImage");
+const raceDgPanel = document.getElementById("raceDgPanel");
 
 let selectedRacePng = "4";
 
@@ -9831,6 +9916,39 @@ function openRacePng(league) {
 
   racePngViewer.classList.add("visible");
   racePngViewer.classList.add("loading");
+  
+  if (raceDgPanel) {
+  raceDgPanel.innerHTML =
+    '<div class="race-dg-title">' +
+      '🏁 Provvedimenti DG — Gara ' + selectedRacePng + ' ' + league +
+    '</div>' +
+
+    '<div class="race-dg-subtitle">' +
+      'Clicca su una penalità per aprire il verbale ufficiale della Direzione Gara.' +
+    '</div>' +
+
+    '<div class="race-dg-list">' +
+
+      '<div class="race-dg-row">' +
+        '<div>' +
+          '<div class="race-dg-pilot">Shark</div>' +
+          '<div class="race-dg-meta">Lap 08 • Timing 12:34</div>' +
+        '</div>' +
+        '<button class="dg-penalty-btn time">P16</button>' +
+      '</div>' +
+
+      '<div class="race-dg-row">' +
+        '<div>' +
+          '<div class="race-dg-pilot">Martina</div>' +
+          '<div class="race-dg-meta">Lap 03 • Timing 04:51</div>' +
+        '</div>' +
+        '<button class="dg-penalty-btn ammonition">P01</button>' +
+      '</div>' +
+
+    '</div>';
+
+  raceDgPanel.classList.add("visible");
+}
 
   const img = new Image();
 
