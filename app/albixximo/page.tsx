@@ -12535,7 +12535,7 @@ const lastCreatedMovementText = useMemo(() => {
                             }}
                           >
                             <option value="" style={{ background: "#11151d", color: "white" }}>
-    Seleziona penalità
+    Penalità
   </option>
                             {penaltyCodeOptions.map((opt) => (
                               <option key={opt.value} value={opt.value} style={{ background: "#11151d", color: "white" }}>
