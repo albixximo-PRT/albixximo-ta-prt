@@ -12893,10 +12893,10 @@ const lastCreatedMovementText = useMemo(() => {
 </div>
 
         <div style={{ display: "grid", gap: 4 }}>
-          {(driverLeagueMap[league] || []).length === 0 ? (
-            <div style={{ fontSize: 12, opacity: 0.45 }}>Nessun pilota</div>
-          ) : (
-            driverLeagueMap[league].map((pilot) => (
+  {(workbenchDriverLeagueMap[league] || []).length === 0 ? (
+    <div style={{ fontSize: 12, opacity: 0.45 }}>Nessun pilota</div>
+  ) : (
+    workbenchDriverLeagueMap[league].map((pilot) => (
   <div
     key={`${league}-${pilot}`}
     style={{
