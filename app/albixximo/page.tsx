@@ -9947,7 +9947,7 @@ function openRacePng(league) {
 
     '</div>';
 
-  raceDgPanel.classList.add("visible");
+  raceDgPanel.style.display = "grid";
 }
 
   const img = new Image();
@@ -10004,6 +10004,9 @@ if (racePngSelect) {
     if (racePngViewer) {
   racePngViewer.classList.remove("visible");
   racePngViewer.classList.remove("loading");
+}
+  if (raceDgPanel) {
+  raceDgPanel.style.display = "none";
 }
   });
 }
@@ -10143,6 +10146,10 @@ if (racePngViewer) {
 
 if (racePngImage) {
   racePngImage.src = "";
+}
+
+if (raceDgPanel) {
+  raceDgPanel.style.display = "none";
 }
 
 if (racePngTabs) {
