@@ -680,7 +680,7 @@ function totalPenaltySeconds(entries: PenaltyEntry[] = [], raceNumber: number): 
 function createPenaltyEntry(): PenaltyEntry {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    code: "P01",
+    code: "",
     lap: "Lap 01",
     minute: "00",
     second: "00",
@@ -3781,7 +3781,7 @@ const isSpecialGara7Platinum = useMemo(() => {
 }, [currentRace, effectiveLega, selectedLeague])
 
   const penaltyCodeOptions = useMemo(() => {
-  const maxPenaltyCode = currentRace >= 6 ? 32 : 39
+  const maxPenaltyCode = currentRace >= 8 ? 31 : currentRace >= 6 ? 32 : 39
 
   return [
     { value: "DSQ", label: "DSQ (Squalifica)" },
@@ -12534,6 +12534,9 @@ const lastCreatedMovementText = useMemo(() => {
                               opacity: penaltyDisabled ? 0.65 : 1,
                             }}
                           >
+                            <option value="" style={{ background: "#11151d", color: "white" }}>
+    Seleziona penalità
+  </option>
                             {penaltyCodeOptions.map((opt) => (
                               <option key={opt.value} value={opt.value} style={{ background: "#11151d", color: "white" }}>
                                 {opt.label}
