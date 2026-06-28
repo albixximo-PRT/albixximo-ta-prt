@@ -365,8 +365,45 @@ const NEW_PENALTY_RULES: Record<string, PenaltyRule> = {
   DSQ: { seconds: 0, effect: "dsq", shortLabel: "DSQ" },
 }
 
+const RACE8_PENALTY_RULES: Record<string, PenaltyRule> = {
+  P01: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P02: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P03: { seconds: 10, effect: "time", shortLabel: "+10s" },
+  P04: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P05: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P06: { seconds: 25, effect: "time", shortLabel: "+25s" },
+  P07: { seconds: 30, effect: "time", shortLabel: "+30s" },
+  P08: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P09: { seconds: 10, effect: "time", shortLabel: "+10s" },
+  P10: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P11: { seconds: 0, effect: "dsq", shortLabel: "SQ CAMP." },
+  P12: { seconds: 10, effect: "time", shortLabel: "+10s" },
+  P13: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P14: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P15: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P16: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P17: { seconds: 30, effect: "time", shortLabel: "+30s" },
+  P18: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P19: { seconds: 0, effect: "other", shortLabel: "SQ QUAL. SUCC." },
+  P20: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P21: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P22: { seconds: 30, effect: "time", shortLabel: "+30s" },
+  P23: { seconds: 0, effect: "dsq", shortLabel: "SQ CAMP." },
+  P24: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P25: { seconds: 60, effect: "time", shortLabel: "+60s" },
+  P26: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P27: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P28: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P29: { seconds: 0, effect: "dsq", shortLabel: "SQ LOBBY" },
+  P30: { seconds: 0, effect: "dsq", shortLabel: "SQ GARA" },
+  P31: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  DSQ: { seconds: 0, effect: "dsq", shortLabel: "DSQ" },
+}
+
 const NEW_AMMONITION_CODES = new Set(["P01", "P23", "P26", "P29"])
 const NEW_DSQ_CODES = new Set(["P11", "P25", "P31", "DSQ"])
+const RACE8_AMMONITION_CODES = new Set(["P01", "P21", "P24", "P27"])
+const RACE8_DSQ_CODES = new Set(["P11", "P23", "P29", "P30", "DSQ"])
 
 function getPointsForPrtRow(r: ExtractRow, bestRaceLap: string): number {
   const basePointsMap: Record<number, number> = {
@@ -567,15 +604,21 @@ function formatPenaltyOptionLabel(seconds: number): string {
 }
 
 function getPenaltyRulesForRace(raceNumber: number) {
-  return raceNumber >= 6 ? NEW_PENALTY_RULES : PENALTY_RULES
+  if (raceNumber >= 8) return RACE8_PENALTY_RULES
+  if (raceNumber >= 6) return NEW_PENALTY_RULES
+  return PENALTY_RULES
 }
 
 function getAmmonitionCodesForRace(raceNumber: number) {
-  return raceNumber >= 6 ? NEW_AMMONITION_CODES : AMMONITION_CODES
+  if (raceNumber >= 8) return RACE8_AMMONITION_CODES
+  if (raceNumber >= 6) return NEW_AMMONITION_CODES
+  return AMMONITION_CODES
 }
 
 function getDsqCodesForRace(raceNumber: number) {
-  return raceNumber >= 6 ? NEW_DSQ_CODES : DSQ_CODES
+  if (raceNumber >= 8) return RACE8_DSQ_CODES
+  if (raceNumber >= 6) return NEW_DSQ_CODES
+  return DSQ_CODES
 }
 
 function getPenaltyRule(code: string, raceNumber: number): PenaltyRule {
