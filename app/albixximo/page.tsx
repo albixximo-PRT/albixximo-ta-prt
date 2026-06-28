@@ -3881,9 +3881,9 @@ useEffect(() => {
   if (typeof window === "undefined") return
   window.localStorage.setItem(
     PRT_DRIVER_LEAGUE_MAP_STORAGE_KEY,
-    JSON.stringify(driverLeagueMap)
+    JSON.stringify(workbenchDriverLeagueMap)
   )
-}, [driverLeagueMap])
+}, [workbenchDriverLeagueMap])
 
 useEffect(() => {
   if (typeof window === "undefined") return
@@ -7241,12 +7241,12 @@ useEffect(() => {
 }, [movementDraftLeague, movementDraftType])
 
 useEffect(() => {
-  const availablePilots = driverLeagueMap[movementDraftLeague] || []
+  const availablePilots = workbenchDriverLeagueMap[movementDraftLeague] || []
 
   if (!availablePilots.includes(movementDraftDriverName)) {
     setMovementDraftDriverName("")
   }
-}, [movementDraftLeague, movementDraftDriverName, driverLeagueMap])
+}, [movementDraftLeague, movementDraftDriverName, workbenchDriverLeagueMap])
 
 function getPreviousMovementCheckpoint(round: number) {
   if (round === 6) return 3
@@ -7629,15 +7629,15 @@ for (let raceNumber = 3; raceNumber <= currentRace; raceNumber++) {
 }
 
   for (const league of CHAMPIONSHIP_LEAGUES) {
-    for (const pilot of driverLeagueMap[league] || []) {
-      const key = normalizeDriverNameForChampionship(pilot)
-      if (!key) continue
-      officialLeagueByDriver.set(key, league)
-    }
+  for (const pilot of workbenchDriverLeagueMap[league] || []) {
+    const key = normalizeDriverNameForChampionship(pilot)
+    if (!key) continue
+    officialLeagueByDriver.set(key, league)
   }
+}
 
   for (const league of CHAMPIONSHIP_LEAGUES) {
-    const pilotsInDrawer = driverLeagueMap[league] || []
+    const pilotsInDrawer = workbenchDriverLeagueMap[league] || []
 
     for (const pilotName of pilotsInDrawer) {
       const cleanPilotName = String(pilotName || "").trim()
@@ -8064,7 +8064,7 @@ return Array.from(map.values())
     if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints
     return a.pilota.localeCompare(b.pilota, "it", { sensitivity: "base" })
   })
-}, [driverBaselines, championshipState, currentRace, manualRace12Draft, driverLeagueMap])
+}, [driverBaselines, championshipState, currentRace, manualRace12Draft, workbenchDriverLeagueMap])
 
 const championshipDriversCount = useMemo(() => {
   return driverChampionship.length
@@ -10269,7 +10269,7 @@ function exportChampionshipBackup() {
   exportTexts,
   driverBaselines,
   manualRace12Draft,
-  driverLeagueMap,
+  driverLeagueMap: workbenchDriverLeagueMap,
   driverAliasMap,
   driverRatingMap,
   uploadedLeagueHtmls,
@@ -12711,9 +12711,9 @@ const lastCreatedMovementText = useMemo(() => {
         }}
       >
         {CHAMPIONSHIP_LEAGUES.reduce(
-          (total, league) => total + (driverLeagueMap[league]?.length || 0),
-          0
-        )} piloti totali
+  (total, league) => total + (workbenchDriverLeagueMap[league]?.length || 0),
+  0
+)} piloti totali
       </div>
 
       {driversToRemoveAfterDsq.length > 0 && (
@@ -12796,7 +12796,7 @@ const lastCreatedMovementText = useMemo(() => {
         >
           <span>{league}</span>
           <span style={{ opacity: 0.72 }}>
-            {driverLeagueMap[league]?.length || 0}
+            {workbenchDriverLeagueMap[league]?.length || 0}
           </span>
         </div>
 
@@ -12955,8 +12955,8 @@ const lastCreatedMovementText = useMemo(() => {
         if (!selected) return
 
         const targetLeague = CHAMPIONSHIP_LEAGUES.find((l) =>
-          driverLeagueMap[l].includes(selected)
-        )
+  workbenchDriverLeagueMap[l].includes(selected)
+)
 
         if (!targetLeague) return
 
@@ -12979,7 +12979,7 @@ const lastCreatedMovementText = useMemo(() => {
       {CHAMPIONSHIP_LEAGUES.flatMap((l) =>
         l === league
           ? []
-          : (driverLeagueMap[l] || []).map((p) => (
+          : (workbenchDriverLeagueMap[l] || []).map((p) => (
               <option key={`${league}-${p}`} value={p}>
                 {p} ({l})
               </option>
@@ -13135,16 +13135,16 @@ const lastCreatedMovementText = useMemo(() => {
       Seleziona pilota...
     </option>
 
-    {(driverLeagueMap[movementDraftLeague] || []).map((pilot) => (
-      <option
-        key={`${movementDraftLeague}-${pilot}`}
-        value={pilot}
-        style={{ background: "#11151d", color: "white" }}
-      >
-        {pilot}
-      </option>
-    ))}
-  </select>
+    {(workbenchDriverLeagueMap[movementDraftLeague] || []).map((pilot) => (
+  <option
+    key={`${movementDraftLeague}-${pilot}`}
+    value={pilot}
+    style={{ background: "#11151d", color: "white" }}
+  >
+    {pilot}
+  </option>
+))}
+</select>
 </div>
 
         <div style={{ display: "grid", gap: 6 }}>
@@ -13233,7 +13233,7 @@ const lastCreatedMovementText = useMemo(() => {
     >
       <option value="">Seleziona pilota...</option>
 
-      {(driverLeagueMap[movementDraftTargetLeague] || []).map((pilot) => (
+      {(workbenchDriverLeagueMap[movementDraftTargetLeague] || []).map((pilot) => (
         <option key={pilot} value={pilot}>
           {pilot}
         </option>
@@ -14194,7 +14194,7 @@ const lastCreatedMovementText = useMemo(() => {
             Seleziona pilota...
           </option>
 
-          {(driverLeagueMap[activeUnknownDriver.league] || []).map((pilot) => (
+          {(workbenchDriverLeagueMap[activeUnknownDriver.league] || []).map((pilot) => (
             <option
               key={`${activeUnknownDriver.id}-${pilot}`}
               value={pilot}
