@@ -365,8 +365,78 @@ const NEW_PENALTY_RULES: Record<string, PenaltyRule> = {
   DSQ: { seconds: 0, effect: "dsq", shortLabel: "DSQ" },
 }
 
+const RACE8_PENALTY_RULES: Record<string, PenaltyRule> = {
+  P01: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P02: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P03: { seconds: 10, effect: "time", shortLabel: "+10s" },
+  P04: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P05: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P06: { seconds: 25, effect: "time", shortLabel: "+25s" },
+  P07: { seconds: 30, effect: "time", shortLabel: "+30s" },
+  P08: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P09: { seconds: 10, effect: "time", shortLabel: "+10s" },
+  P10: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P11: { seconds: 0, effect: "dsq", shortLabel: "SQ CAMP." },
+  P12: { seconds: 10, effect: "time", shortLabel: "+10s" },
+  P13: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P14: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P15: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P16: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P17: { seconds: 30, effect: "time", shortLabel: "+30s" },
+  P18: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P19: { seconds: 0, effect: "other", shortLabel: "SQ QUAL. SUCC." },
+  P20: { seconds: 20, effect: "time", shortLabel: "+20s" },
+  P21: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P22: { seconds: 30, effect: "time", shortLabel: "+30s" },
+  P23: { seconds: 0, effect: "dsq", shortLabel: "SQ CAMP." },
+  P24: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P25: { seconds: 60, effect: "time", shortLabel: "+60s" },
+  P26: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  P27: { seconds: 0, effect: "ammonition", shortLabel: "00:00.000" },
+  P28: { seconds: 5, effect: "time", shortLabel: "+5s" },
+  P29: { seconds: 0, effect: "dsq", shortLabel: "SQ LOBBY" },
+  P30: { seconds: 0, effect: "dsq", shortLabel: "SQ GARA" },
+  P31: { seconds: 15, effect: "time", shortLabel: "+15s" },
+  DSQ: { seconds: 0, effect: "dsq", shortLabel: "DSQ" },
+}
+
 const NEW_AMMONITION_CODES = new Set(["P01", "P23", "P26", "P29"])
 const NEW_DSQ_CODES = new Set(["P11", "P25", "P31", "DSQ"])
+const RACE8_AMMONITION_CODES = new Set(["P01", "P21", "P24", "P27"])
+const RACE8_DSQ_CODES = new Set(["P11", "P23", "P29", "P30", "DSQ"])
+const RACE8_PENALTY_DESCRIPTIONS: Record<string, string> = {
+  P01: "Contatto con perdita di posizioni (0)",
+  P02: "Contatto con perdita di posizioni (1-2)",
+  P03: "Contatto con perdita di posizioni (3-4)",
+  P04: "Contatto con perdita di posizioni (5-6)",
+  P05: "Contatto con perdita di posizioni (7-8)",
+  P06: "Contatto con perdita di posizioni (9-10)",
+  P07: "Contatto con perdita di posizioni (11-14)",
+  P08: "In aggiunta da P01 a P07 con danni ridotti",
+  P09: "In aggiunta da P01 a P07 con danni realistici",
+  P10: "In aggiunta da P01 a P07 non restituendo posizione",
+  P11: "Collisione volontaria",
+  P12: "In aggiunta da P01 a P10 per manovra aggressiva in Curva 1",
+  P13: "Effettuare più di un cambio di traiettoria difensiva in rettilineo",
+  P14: "Cambio di traiettoria improvviso o in fase di frenata",
+  P15: "Ottenimento della posizione mediante sorpasso scorretto",
+  P16: "Mancato rispetto delle bandiere blu",
+  P17: "Provocare bandiera gialla fissa",
+  P18: "Rientro in pista pericoloso con incidente o intralcio",
+  P19: "Velocità troppo bassa in pista",
+  P20: "Rallentamento ingiustificato su tratti ad alta velocità",
+  P21: "Guida scorretta generica",
+  P22: "Uso improprio della chat durante Qualifica/Gara",
+  P23: "Insulti in chat/party audio/canali Discord",
+  P24: "Rientro ai box tasto OPTION durante Qualifica senza ripartenza",
+  P25: "Rientro ai box tasto OPTION durante Qualifica con ripartenza",
+  P26: "Rientro in lobby dopo abbandono Gara (inclusi crash)",
+  P27: "Mancata pubblicazione screenshot Qualifiche/Gara e/o Replay Gara",
+  P28: "Errato o mancato utilizzo degli elementi grafici ufficiali PRT",
+  P29: "Restart della Lobby non previsto dal Regolamento",
+  P30: "Livree o adesivi offensivi - Comportamenti antisportivi",
+  P31: "Raggiunte 3 ammonizioni",
+}
 
 function getPointsForPrtRow(r: ExtractRow, bestRaceLap: string): number {
   const basePointsMap: Record<number, number> = {
@@ -567,15 +637,21 @@ function formatPenaltyOptionLabel(seconds: number): string {
 }
 
 function getPenaltyRulesForRace(raceNumber: number) {
-  return raceNumber >= 6 ? NEW_PENALTY_RULES : PENALTY_RULES
+  if (raceNumber >= 8) return RACE8_PENALTY_RULES
+  if (raceNumber >= 6) return NEW_PENALTY_RULES
+  return PENALTY_RULES
 }
 
 function getAmmonitionCodesForRace(raceNumber: number) {
-  return raceNumber >= 6 ? NEW_AMMONITION_CODES : AMMONITION_CODES
+  if (raceNumber >= 8) return RACE8_AMMONITION_CODES
+  if (raceNumber >= 6) return NEW_AMMONITION_CODES
+  return AMMONITION_CODES
 }
 
 function getDsqCodesForRace(raceNumber: number) {
-  return raceNumber >= 6 ? NEW_DSQ_CODES : DSQ_CODES
+  if (raceNumber >= 8) return RACE8_DSQ_CODES
+  if (raceNumber >= 6) return NEW_DSQ_CODES
+  return DSQ_CODES
 }
 
 function getPenaltyRule(code: string, raceNumber: number): PenaltyRule {
@@ -604,7 +680,7 @@ function totalPenaltySeconds(entries: PenaltyEntry[] = [], raceNumber: number): 
 function createPenaltyEntry(): PenaltyEntry {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    code: "P01",
+    code: "",
     lap: "Lap 01",
     minute: "00",
     second: "00",
@@ -621,6 +697,21 @@ function formatPenaltyDetail(entry: PenaltyEntry): string {
 
 function getPenaltyOptionText(code: string, raceNumber: number): string {
   const rule = getPenaltyRule(code, raceNumber)
+
+  const sanction =
+    rule.effect === "ammonition"
+      ? "Ammonizione"
+      : rule.effect === "dsq" || rule.effect === "other"
+        ? rule.shortLabel
+        : `+${rule.seconds} sec`
+
+  if (raceNumber >= 8 && code !== "DSQ") {
+    const description = RACE8_PENALTY_DESCRIPTIONS[code]
+
+    if (description) {
+      return `${code} - ${description} - ${sanction}`
+    }
+  }
 
   if (rule.effect === "ammonition") return `${code} (Ammonizione)`
   if (rule.effect === "dsq") return `${code} (${rule.shortLabel})`
@@ -673,6 +764,7 @@ function normalizeLeagueKey(value: string): ChampionshipLeagueKey | null {
 
 const DRIVER_ENTRY_RACE: Record<string, number> = {
   krasam23: 7,
+  step87: 8,
 }
 
 function getDriverEntryRace(driverName: string) {
@@ -3689,7 +3781,7 @@ const isSpecialGara7Platinum = useMemo(() => {
 }, [currentRace, effectiveLega, selectedLeague])
 
   const penaltyCodeOptions = useMemo(() => {
-  const maxPenaltyCode = currentRace >= 6 ? 32 : 39
+  const maxPenaltyCode = currentRace >= 8 ? 31 : currentRace >= 6 ? 32 : 39
 
   return [
     { value: "DSQ", label: "DSQ (Squalifica)" },
@@ -3880,9 +3972,9 @@ useEffect(() => {
   if (typeof window === "undefined") return
   window.localStorage.setItem(
     PRT_DRIVER_LEAGUE_MAP_STORAGE_KEY,
-    JSON.stringify(driverLeagueMap)
+    JSON.stringify(workbenchDriverLeagueMap)
   )
-}, [driverLeagueMap])
+}, [workbenchDriverLeagueMap])
 
 useEffect(() => {
   if (typeof window === "undefined") return
@@ -7240,12 +7332,12 @@ useEffect(() => {
 }, [movementDraftLeague, movementDraftType])
 
 useEffect(() => {
-  const availablePilots = driverLeagueMap[movementDraftLeague] || []
+  const availablePilots = workbenchDriverLeagueMap[movementDraftLeague] || []
 
   if (!availablePilots.includes(movementDraftDriverName)) {
     setMovementDraftDriverName("")
   }
-}, [movementDraftLeague, movementDraftDriverName, driverLeagueMap])
+}, [movementDraftLeague, movementDraftDriverName, workbenchDriverLeagueMap])
 
 function getPreviousMovementCheckpoint(round: number) {
   if (round === 6) return 3
@@ -7330,7 +7422,7 @@ function confirmPendingMovementWithBase() {
 }
 
 function applySingleMovementToDrawer(entry: LeagueMovementEntry) {
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -7443,7 +7535,7 @@ function applySingleMovementToDrawer(entry: LeagueMovementEntry) {
 function applyCurrentRoundMovementsToDrawer() {
   if (!hasCurrentRoundMovements) return
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -7628,15 +7720,15 @@ for (let raceNumber = 3; raceNumber <= currentRace; raceNumber++) {
 }
 
   for (const league of CHAMPIONSHIP_LEAGUES) {
-    for (const pilot of driverLeagueMap[league] || []) {
-      const key = normalizeDriverNameForChampionship(pilot)
-      if (!key) continue
-      officialLeagueByDriver.set(key, league)
-    }
+  for (const pilot of workbenchDriverLeagueMap[league] || []) {
+    const key = normalizeDriverNameForChampionship(pilot)
+    if (!key) continue
+    officialLeagueByDriver.set(key, league)
   }
+}
 
   for (const league of CHAMPIONSHIP_LEAGUES) {
-    const pilotsInDrawer = driverLeagueMap[league] || []
+    const pilotsInDrawer = workbenchDriverLeagueMap[league] || []
 
     for (const pilotName of pilotsInDrawer) {
       const cleanPilotName = String(pilotName || "").trim()
@@ -8026,7 +8118,7 @@ for (const movementRound of [3, 6, 9, 12]) {
 
 const activeDrawerDrivers = new Set(
   CHAMPIONSHIP_LEAGUES.flatMap((league) =>
-    (driverLeagueMap[league] || []).map((pilot) =>
+    (workbenchDriverLeagueMap[league] || []).map((pilot) =>
       normalizeDriverNameForChampionship(pilot)
     )
   )
@@ -8050,7 +8142,7 @@ return Array.from(map.values())
   // 👉 resta SOLO se è ancora nel cassetto
 
   const isStillInDrawer = CHAMPIONSHIP_LEAGUES.some((league) =>
-    (driverLeagueMap[league] || []).some(
+    (workbenchDriverLeagueMap[league] || []).some(
       (p) =>
         normalizeDriverNameForChampionship(p) ===
         normalizeDriverNameForChampionship(driver.pilota)
@@ -8063,7 +8155,7 @@ return Array.from(map.values())
     if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints
     return a.pilota.localeCompare(b.pilota, "it", { sensitivity: "base" })
   })
-}, [driverBaselines, championshipState, currentRace, manualRace12Draft, driverLeagueMap])
+}, [driverBaselines, championshipState, currentRace, manualRace12Draft, workbenchDriverLeagueMap])
 
 const championshipDriversCount = useMemo(() => {
   return driverChampionship.length
@@ -10099,6 +10191,7 @@ async function run(targetLeague?: ChampionshipLeagueKey) {
   setError("")
   setCsv("")
   setRows([])
+  setQualiRows([])
   setUnionMeta({ gara: "", lobby: "", lega: "" })
   setManualGaraOverride("")
   setManualLegaOverride("")
@@ -10224,6 +10317,7 @@ setQualiRows(extractedQualiRows)
   setFiles([])
   setCsv("")
   setRows([])
+  setQualiRows([])
   setUnionMeta({ gara: "", lobby: "", lega: "" })
   setLoading(false)
   setExporting(false)
@@ -10268,7 +10362,7 @@ function exportChampionshipBackup() {
   exportTexts,
   driverBaselines,
   manualRace12Draft,
-  driverLeagueMap,
+  driverLeagueMap: workbenchDriverLeagueMap,
   driverAliasMap,
   driverRatingMap,
   uploadedLeagueHtmls,
@@ -10481,7 +10575,7 @@ function applyBulkPilotsToLeagueDrawer(league: ChampionshipLeagueKey) {
     uniquePilots.push(pilot)
   }
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -10519,7 +10613,7 @@ function addPilotToLeagueDrawer(league: ChampionshipLeagueKey) {
 
   const normalized = normalizeDriverNameForChampionship(rawName)
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -10546,10 +10640,13 @@ function addPilotToLeagueDrawer(league: ChampionshipLeagueKey) {
   }))
 }
 
-function removePilotFromLeagueDrawer(league: ChampionshipLeagueKey, pilotName: string) {
+function removePilotFromLeagueDrawer(
+  league: ChampionshipLeagueKey,
+  pilotName: string
+) {
   const target = normalizeDriverNameForChampionship(pilotName)
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -10559,7 +10656,8 @@ function removePilotFromLeagueDrawer(league: ChampionshipLeagueKey, pilotName: s
     }
 
     next[league] = next[league].filter(
-      (pilot) => normalizeDriverNameForChampionship(pilot) !== target
+      (pilot) =>
+        normalizeDriverNameForChampionship(pilot) !== target
     )
 
     return next
@@ -10575,7 +10673,7 @@ function removeDsqDriversFromDrawer() {
     )
   )
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -10586,7 +10684,10 @@ function removeDsqDriversFromDrawer() {
 
     for (const league of CHAMPIONSHIP_LEAGUES) {
       next[league] = next[league].filter(
-        (pilot) => !keysToRemove.has(normalizeDriverNameForChampionship(pilot))
+        (pilot) =>
+          !keysToRemove.has(
+            normalizeDriverNameForChampionship(pilot)
+          )
       )
     }
 
@@ -10600,7 +10701,7 @@ function addPilotToLeagueDrawerDirect(league: ChampionshipLeagueKey, pilotName: 
 
   const normalized = normalizeDriverNameForChampionship(rawName)
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -10658,7 +10759,7 @@ function renamePilotInsideLeagueDrawer(
 
   const oldNorm = normalizeDriverNameForChampionship(cleanOld)
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -10715,7 +10816,7 @@ function swapPilotsBetweenLeagues(
   const fromNorm = normalizeDriverNameForChampionship(pilotName)
   const toNorm = normalizeDriverNameForChampionship(targetPilotName)
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -12433,6 +12534,9 @@ const lastCreatedMovementText = useMemo(() => {
                               opacity: penaltyDisabled ? 0.65 : 1,
                             }}
                           >
+                            <option value="" style={{ background: "#11151d", color: "white" }}>
+    Penalità
+  </option>
                             {penaltyCodeOptions.map((opt) => (
                               <option key={opt.value} value={opt.value} style={{ background: "#11151d", color: "white" }}>
                                 {opt.label}
@@ -12703,9 +12807,9 @@ const lastCreatedMovementText = useMemo(() => {
         }}
       >
         {CHAMPIONSHIP_LEAGUES.reduce(
-          (total, league) => total + (driverLeagueMap[league]?.length || 0),
-          0
-        )} piloti totali
+  (total, league) => total + (workbenchDriverLeagueMap[league]?.length || 0),
+  0
+)} piloti totali
       </div>
 
       {driversToRemoveAfterDsq.length > 0 && (
@@ -12788,7 +12892,7 @@ const lastCreatedMovementText = useMemo(() => {
         >
           <span>{league}</span>
           <span style={{ opacity: 0.72 }}>
-            {driverLeagueMap[league]?.length || 0}
+            {workbenchDriverLeagueMap[league]?.length || 0}
           </span>
         </div>
 
@@ -12885,10 +12989,10 @@ const lastCreatedMovementText = useMemo(() => {
 </div>
 
         <div style={{ display: "grid", gap: 4 }}>
-          {(driverLeagueMap[league] || []).length === 0 ? (
-            <div style={{ fontSize: 12, opacity: 0.45 }}>Nessun pilota</div>
-          ) : (
-            driverLeagueMap[league].map((pilot) => (
+  {(workbenchDriverLeagueMap[league] || []).length === 0 ? (
+    <div style={{ fontSize: 12, opacity: 0.45 }}>Nessun pilota</div>
+  ) : (
+    workbenchDriverLeagueMap[league].map((pilot) => (
   <div
     key={`${league}-${pilot}`}
     style={{
@@ -12947,8 +13051,8 @@ const lastCreatedMovementText = useMemo(() => {
         if (!selected) return
 
         const targetLeague = CHAMPIONSHIP_LEAGUES.find((l) =>
-          driverLeagueMap[l].includes(selected)
-        )
+  workbenchDriverLeagueMap[l].includes(selected)
+)
 
         if (!targetLeague) return
 
@@ -12971,7 +13075,7 @@ const lastCreatedMovementText = useMemo(() => {
       {CHAMPIONSHIP_LEAGUES.flatMap((l) =>
         l === league
           ? []
-          : (driverLeagueMap[l] || []).map((p) => (
+          : (workbenchDriverLeagueMap[l] || []).map((p) => (
               <option key={`${league}-${p}`} value={p}>
                 {p} ({l})
               </option>
@@ -13127,16 +13231,16 @@ const lastCreatedMovementText = useMemo(() => {
       Seleziona pilota...
     </option>
 
-    {(driverLeagueMap[movementDraftLeague] || []).map((pilot) => (
-      <option
-        key={`${movementDraftLeague}-${pilot}`}
-        value={pilot}
-        style={{ background: "#11151d", color: "white" }}
-      >
-        {pilot}
-      </option>
-    ))}
-  </select>
+    {(workbenchDriverLeagueMap[movementDraftLeague] || []).map((pilot) => (
+  <option
+    key={`${movementDraftLeague}-${pilot}`}
+    value={pilot}
+    style={{ background: "#11151d", color: "white" }}
+  >
+    {pilot}
+  </option>
+))}
+</select>
 </div>
 
         <div style={{ display: "grid", gap: 6 }}>
@@ -13225,7 +13329,7 @@ const lastCreatedMovementText = useMemo(() => {
     >
       <option value="">Seleziona pilota...</option>
 
-      {(driverLeagueMap[movementDraftTargetLeague] || []).map((pilot) => (
+      {(workbenchDriverLeagueMap[movementDraftTargetLeague] || []).map((pilot) => (
         <option key={pilot} value={pilot}>
           {pilot}
         </option>
@@ -14186,7 +14290,7 @@ const lastCreatedMovementText = useMemo(() => {
             Seleziona pilota...
           </option>
 
-          {(driverLeagueMap[activeUnknownDriver.league] || []).map((pilot) => (
+          {(workbenchDriverLeagueMap[activeUnknownDriver.league] || []).map((pilot) => (
             <option
               key={`${activeUnknownDriver.id}-${pilot}`}
               value={pilot}
