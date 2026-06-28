@@ -404,6 +404,39 @@ const NEW_AMMONITION_CODES = new Set(["P01", "P23", "P26", "P29"])
 const NEW_DSQ_CODES = new Set(["P11", "P25", "P31", "DSQ"])
 const RACE8_AMMONITION_CODES = new Set(["P01", "P21", "P24", "P27"])
 const RACE8_DSQ_CODES = new Set(["P11", "P23", "P29", "P30", "DSQ"])
+const RACE8_PENALTY_DESCRIPTIONS: Record<string, string> = {
+  P01: "Contatto con perdita di posizioni (0)",
+  P02: "Contatto con perdita di posizioni (1-2)",
+  P03: "Contatto con perdita di posizioni (3-4)",
+  P04: "Contatto con perdita di posizioni (5-6)",
+  P05: "Contatto con perdita di posizioni (7-8)",
+  P06: "Contatto con perdita di posizioni (9-10)",
+  P07: "Contatto con perdita di posizioni (11-14)",
+  P08: "In aggiunta da P01 a P07 con danni ridotti",
+  P09: "In aggiunta da P01 a P07 con danni realistici",
+  P10: "In aggiunta da P01 a P07 non restituendo posizione",
+  P11: "Collisione volontaria",
+  P12: "In aggiunta da P01 a P10 per manovra aggressiva in Curva 1",
+  P13: "Effettuare più di un cambio di traiettoria difensiva in rettilineo",
+  P14: "Cambio di traiettoria improvviso o in fase di frenata",
+  P15: "Ottenimento della posizione mediante sorpasso scorretto",
+  P16: "Mancato rispetto delle bandiere blu",
+  P17: "Provocare bandiera gialla fissa",
+  P18: "Rientro in pista pericoloso con incidente o intralcio",
+  P19: "Velocità troppo bassa in pista",
+  P20: "Rallentamento ingiustificato su tratti ad alta velocità",
+  P21: "Guida scorretta generica",
+  P22: "Uso improprio della chat durante Qualifica/Gara",
+  P23: "Insulti in chat/party audio/canali Discord",
+  P24: "Rientro ai box tasto OPTION durante Qualifica senza ripartenza",
+  P25: "Rientro ai box tasto OPTION durante Qualifica con ripartenza",
+  P26: "Rientro in lobby dopo abbandono Gara (inclusi crash)",
+  P27: "Mancata pubblicazione screenshot Qualifiche/Gara e/o Replay Gara",
+  P28: "Errato o mancato utilizzo degli elementi grafici ufficiali PRT",
+  P29: "Restart della Lobby non previsto dal Regolamento",
+  P30: "Livree o adesivi offensivi - Comportamenti antisportivi",
+  P31: "Raggiunte 3 ammonizioni",
+}
 
 function getPointsForPrtRow(r: ExtractRow, bestRaceLap: string): number {
   const basePointsMap: Record<number, number> = {
@@ -664,6 +697,21 @@ function formatPenaltyDetail(entry: PenaltyEntry): string {
 
 function getPenaltyOptionText(code: string, raceNumber: number): string {
   const rule = getPenaltyRule(code, raceNumber)
+
+  const sanction =
+    rule.effect === "ammonition"
+      ? "Ammonizione"
+      : rule.effect === "dsq" || rule.effect === "other"
+        ? rule.shortLabel
+        : `+${rule.seconds} sec`
+
+  if (raceNumber >= 8 && code !== "DSQ") {
+    const description = RACE8_PENALTY_DESCRIPTIONS[code]
+
+    if (description) {
+      return `${code} - ${description} - ${sanction}`
+    }
+  }
 
   if (rule.effect === "ammonition") return `${code} (Ammonizione)`
   if (rule.effect === "dsq") return `${code} (${rule.shortLabel})`
