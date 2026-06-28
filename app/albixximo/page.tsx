@@ -8027,7 +8027,7 @@ for (const movementRound of [3, 6, 9, 12]) {
 
 const activeDrawerDrivers = new Set(
   CHAMPIONSHIP_LEAGUES.flatMap((league) =>
-    (driverLeagueMap[league] || []).map((pilot) =>
+    (workbenchDriverLeagueMap[league] || []).map((pilot) =>
       normalizeDriverNameForChampionship(pilot)
     )
   )
@@ -8051,7 +8051,7 @@ return Array.from(map.values())
   // 👉 resta SOLO se è ancora nel cassetto
 
   const isStillInDrawer = CHAMPIONSHIP_LEAGUES.some((league) =>
-    (driverLeagueMap[league] || []).some(
+    (workbenchDriverLeagueMap[league] || []).some(
       (p) =>
         normalizeDriverNameForChampionship(p) ===
         normalizeDriverNameForChampionship(driver.pilota)
