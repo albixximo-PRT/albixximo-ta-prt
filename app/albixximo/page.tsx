@@ -7422,7 +7422,7 @@ function confirmPendingMovementWithBase() {
 }
 
 function applySingleMovementToDrawer(entry: LeagueMovementEntry) {
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -7535,7 +7535,7 @@ function applySingleMovementToDrawer(entry: LeagueMovementEntry) {
 function applyCurrentRoundMovementsToDrawer() {
   if (!hasCurrentRoundMovements) return
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -10575,7 +10575,7 @@ function applyBulkPilotsToLeagueDrawer(league: ChampionshipLeagueKey) {
     uniquePilots.push(pilot)
   }
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -10613,7 +10613,7 @@ function addPilotToLeagueDrawer(league: ChampionshipLeagueKey) {
 
   const normalized = normalizeDriverNameForChampionship(rawName)
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -10673,7 +10673,7 @@ function removeDsqDriversFromDrawer() {
     )
   )
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -10701,7 +10701,7 @@ function addPilotToLeagueDrawerDirect(league: ChampionshipLeagueKey, pilotName: 
 
   const normalized = normalizeDriverNameForChampionship(rawName)
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -10759,7 +10759,7 @@ function renamePilotInsideLeagueDrawer(
 
   const oldNorm = normalizeDriverNameForChampionship(cleanOld)
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
@@ -10816,7 +10816,7 @@ function swapPilotsBetweenLeagues(
   const fromNorm = normalizeDriverNameForChampionship(pilotName)
   const toNorm = normalizeDriverNameForChampionship(targetPilotName)
 
-  setDriverLeagueMap((prev) => {
+  setWorkbenchDriverLeagueMap((prev) => {
     const next: DriverLeagueMap = {
       ELITE: [...prev.ELITE],
       PLATINUM: [...prev.PLATINUM],
