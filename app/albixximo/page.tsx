@@ -3575,6 +3575,16 @@ const PRT_DRIVER_LEAGUE_MAP_STORAGE_KEY = "albixximo_prt_driver_league_map"
 const PRT_DRIVER_ALIAS_MAP_STORAGE_KEY = "albixximo_prt_driver_alias_map"
 const PRT_DRIVER_RATING_MAP_STORAGE_KEY = "albixximo_prt_driver_rating_map"
 
+const vampireWarsFontStyle = `
+  @font-face {
+    font-family: 'VampireWars';
+    src: url('/fonts/VampireWars.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+`
+
 export default function Page() {
   const [files, setFiles] = useState<File[]>([])
   const [csv, setCsv] = useState("")
@@ -3753,6 +3763,23 @@ const championshipExportBannerRef = useRef<HTMLDivElement | null>(null)
 const championshipExportTableRef = useRef<HTMLDivElement | null>(null)
 const appHeaderExportRef = useRef<HTMLDivElement | null>(null)
 const championshipHtmlExportRef = useRef<HTMLDivElement | null>(null)
+
+useEffect(() => {
+  const style = document.createElement("style")
+
+  style.innerHTML = `
+    @font-face {
+      font-family: 'VampireWars';
+      src: url('/fonts/VampireWars.ttf') format('truetype');
+    }
+  `
+
+  document.head.appendChild(style)
+
+  return () => {
+    document.head.removeChild(style)
+  }
+}, [])
 
   const canRun = useMemo(() => files.length >= 2, [files])
   const effectiveGara = useMemo(() => {
@@ -8255,39 +8282,111 @@ const driversToRemoveAfterDsq = useMemo(() => {
   })
 }, [driverChampionship])
 
+function exportRaceDgJson() {
+  const leagueForFile = normalizeLeagueKey(effectiveLega) || selectedLeague
 
+  const dgRows = finalRows.flatMap((row) => {
+    const rowKey = getPrtRowStableKey(row.sourcePosGara)
+    const entries = penalties[rowKey] || []
+
+    return entries
+      .filter((entry) => String(entry.code || "").trim())
+      .map((entry) => {
+        const rule = getPenaltyRule(entry.code, currentRace)
+
+        const type =
+          rule.effect === "dsq"
+            ? "dsq"
+            : rule.effect === "ammonition"
+              ? "ammonition"
+              : "time"
+
+        const sanction =
+          rule.effect === "ammonition"
+            ? "Ammonizione"
+            : rule.effect === "dsq"
+              ? rule.shortLabel
+              : `+${rule.seconds} secondi`
+
+        return {
+          pilot: row.pilota,
+          code: entry.code,
+          lap: entry.lap.replace("Lap ", ""),
+          timing:
+            entry.lap === "Lap -"
+              ? "--:--"
+              : `${entry.minute}:${entry.second}`,
+          reason:
+            currentRace >= 8
+              ? RACE8_PENALTY_DESCRIPTIONS[entry.code] || getPenaltyOptionText(entry.code, currentRace)
+              : getPenaltyOptionText(entry.code, currentRace),
+          sanction,
+          type,
+        }
+      })
+  })
+
+  if (!dgRows.length) {
+    alert("Nessun provvedimento DG da esportare")
+    return false
+  }
+
+  const blob = new Blob([JSON.stringify(dgRows, null, 2)], {
+    type: "application/json;charset=utf-8",
+  })
+
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+
+  a.href = url
+  a.download = `${leagueForFile}-dg.json`
+
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+
+  URL.revokeObjectURL(url)
+
+  alert(`File ${leagueForFile}-dg.json esportato correttamente`)
+
+  return true
+}
 
 async function performExportTablePng() {
   if (!exportRef.current || finalRows.length === 0 || exporting) return
 
-    try {
-      setExporting(true)
-      await new Promise((resolve) => setTimeout(resolve, 140))
+  try {
+    setExporting(true)
+    await new Promise((resolve) => setTimeout(resolve, 140))
 
-      const dataUrl = await toPng(exportRef.current, {
-        cacheBust: true,
-        pixelRatio: 2,
-        width: 1920,
-        height: 1080,
-        canvasWidth: 1920,
-        canvasHeight: 1080,
-        backgroundColor: "#07080c",
-        style: {
-          transform: "scale(1)",
-          transformOrigin: "top left",
-        },
-      })
+    const dataUrl = await toPng(exportRef.current, {
+      cacheBust: true,
+      pixelRatio: 2,
+      width: 1920,
+      height: 1080,
+      canvasWidth: 1920,
+      canvasHeight: 1080,
+      backgroundColor: "#07080c",
+      style: {
+        transform: "scale(1)",
+        transformOrigin: "top left",
+      },
+    })
 
-      const link = document.createElement("a")
-      link.download = "albixximo_classifica_output.png"
-      link.href = dataUrl
-      link.click()
-    } catch (e: any) {
-      setError(`Errore esportazione PNG: ${String(e?.message || e)}`)
-    } finally {
-      setExporting(false)
-    }
+    const link = document.createElement("a")
+    link.download = "albixximo_classifica_output.png"
+    link.href = dataUrl
+    link.click()
+
+    // 👇 AGGIUNGI SOLO QUESTA RIGA
+    exportRaceDgJson()
+
+  } catch (e: any) {
+    setError(`Errore esportazione PNG: ${String(e?.message || e)}`)
+  } finally {
+    setExporting(false)
   }
+}
 
   async function downloadChampionshipHtmlExport() {
   const exportNode = championshipHtmlExportRef.current
@@ -8683,7 +8782,17 @@ try {
 />
   <title>PRT Season 2K26 - Portale Classifiche</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+
+  
   <style>
+  @font-face {
+  font-family: 'VampireWars';
+  src: url('/fonts/VampireWars.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
     * { box-sizing: border-box; }
 
     html, body {
@@ -8863,83 +8972,189 @@ try {
 .race-dg-panel {
   display: none;
   margin-top: 14px;
-  padding: 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(255,215,0,0.22);
+}
+
+.dg-accordion {
+  border-radius: 20px;
+  border: 1px solid rgba(255,215,0,0.24);
   background:
-    radial-gradient(700px 220px at 12% 0%, rgba(255,215,0,0.14), transparent 55%),
-    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.22));
-  box-shadow: 0 12px 36px rgba(0,0,0,0.28);
+    radial-gradient(700px 220px at 8% 0%, rgba(255,215,0,0.14), transparent 55%),
+    radial-gradient(520px 220px at 92% 0%, rgba(160,90,255,0.13), transparent 55%),
+    linear-gradient(180deg, rgba(255,255,255,0.055), rgba(0,0,0,0.28));
+  box-shadow:
+    0 12px 36px rgba(0,0,0,0.28),
+    inset 0 0 18px rgba(255,255,255,0.025);
+  overflow: hidden;
 }
 
-.race-dg-panel.visible {
-  display: grid;
-  gap: 12px;
-}
-
-.race-dg-title {
-  font-size: 18px;
-  font-weight: 900;
-  letter-spacing: 0.7px;
-  text-transform: uppercase;
-}
-
-.race-dg-subtitle {
-  font-size: 12px;
-  opacity: 0.74;
-  font-weight: 700;
-}
-
-.race-dg-list {
-  display: grid;
-  gap: 10px;
-}
-
-.race-dg-row {
+.dg-accordion-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 17px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  flex-wrap: wrap;
-  padding: 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.22);
 }
 
-.race-dg-pilot {
+.dg-accordion-summary::-webkit-details-marker {
+  display: none;
+}
+
+.dg-accordion-title {
+  font-size: 18px;
   font-weight: 900;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 10px rgba(255,215,0,0.28),
+    0 0 18px rgba(160,90,255,0.18);
 }
 
-.race-dg-meta {
+.dg-accordion-subtitle {
+  margin-top: 4px;
   font-size: 12px;
-  opacity: 0.72;
-  font-weight: 700;
+  font-weight: 800;
+  opacity: 0.68;
+  letter-spacing: 0.3px;
 }
 
-.dg-penalty-btn {
+.dg-accordion-action {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #ffe58a;
+  border: 1px solid rgba(255,215,0,0.28);
+  background: rgba(255,215,0,0.08);
+  box-shadow: 0 0 16px rgba(255,215,0,0.08);
+}
+
+.dg-accordion[open] .dg-accordion-action {
+  color: #d8c7ff;
+  border-color: rgba(160,90,255,0.30);
+  background: rgba(160,90,255,0.10);
+}
+
+.dg-accordion[open] .dg-accordion-action::before {
+  content: "Chiudi";
+}
+
+.dg-accordion[open] .dg-accordion-action {
+  font-size: 0;
+}
+
+.dg-accordion[open] .dg-accordion-action::before {
+  font-size: 12px;
+}
+
+.dg-accordion-content {
+  display: grid;
+  gap: 8px;
+  padding: 0 16px 16px 16px;
+}
+
+.dg-driver-row {
   appearance: none;
   border: none;
+  width: 100%;
   cursor: pointer;
-  border-radius: 999px;
-  padding: 8px 13px;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
   color: white;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.025));
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow:
+    inset 0 0 14px rgba(255,255,255,0.018),
+    0 8px 18px rgba(0,0,0,0.18);
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.dg-driver-row:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255,215,0,0.30);
+  background:
+    linear-gradient(90deg, rgba(255,215,0,0.08), rgba(160,90,255,0.05));
+}
+
+.dg-driver-name {
+  font-size: 15px;
   font-weight: 900;
-  letter-spacing: 0.7px;
-  box-shadow: 0 0 18px rgba(0,0,0,0.28);
+  letter-spacing: 0.25px;
 }
 
-.dg-penalty-btn.time {
-  background: linear-gradient(180deg, #ef4444, #991b1b);
+.dg-open-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 78px;
+  padding: 8px 14px;
+
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+
+  color: #ffe58a;
+
+  border: 1px solid rgba(255,215,0,0.28);
+
+  background: rgba(255,215,0,0.08);
+
+  box-shadow:
+    0 0 16px rgba(255,215,0,0.08);
+
+  text-transform: uppercase;
+
+  transition:
+    background .2s ease,
+    border-color .2s ease,
+    transform .15s ease;
 }
 
-.dg-penalty-btn.ammonition {
-  background: linear-gradient(180deg, #f59e0b, #b45309);
+.dg-driver-row:hover .dg-open-pill {
+  color: #d8c7ff;
+  border-color: rgba(160,90,255,0.30);
+  background: rgba(160,90,255,0.10);
 }
 
-.dg-penalty-btn.dsq {
-  background: linear-gradient(180deg, #a855f7, #6b21a8);
+.dg-mini-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: white;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.65px;
+  box-shadow:
+    0 0 16px rgba(0,0,0,0.28),
+    inset 0 1px 0 rgba(255,255,255,0.22);
+}
+
+.dg-mini-pill.time {
+  background: linear-gradient(180deg, #ff4b4b, #b91c1c);
+}
+
+.dg-mini-pill.ammonition {
+  background: linear-gradient(180deg, #ffb020, #c76a00);
+}
+
+.dg-mini-pill.dsq {
+  background: linear-gradient(180deg, #c084fc, #7e22ce);
 }
 
 .race-png-viewer.loading::before {
@@ -9565,6 +9780,217 @@ try {
       }
     }
 
+    .dg-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0,0,0,0.82);
+  backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.dg-modal.open {
+  display: flex;
+}
+
+.dg-modal-card {
+  width: 100%;
+  max-width: 620px;
+  border-radius: 24px;
+  padding: 28px;
+  border: 1px solid rgba(255,215,0,0.30);
+
+  background:
+    radial-gradient(700px 240px at 10% 0%, rgba(255,215,0,0.18), transparent 55%),
+    radial-gradient(500px 240px at 90% 0%, rgba(160,90,255,0.18), transparent 55%),
+    linear-gradient(180deg, #11151d, #090b10);
+
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.55),
+    0 0 40px rgba(255,215,0,0.10);
+
+  text-align: center;
+}
+
+.dg-modal-flags {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.dg-modal-flags img {
+  width: 150px;
+  height: auto;
+  display: block;
+  filter:
+    drop-shadow(0 0 10px rgba(255,255,255,0.25))
+    drop-shadow(0 0 24px rgba(255,215,0,0.25));
+}
+
+.dg-modal-title {
+  font-family: 'VampireWars', sans-serif;
+
+  font-size: 44px;
+  font-weight: 400;
+
+  text-transform: uppercase;
+  letter-spacing: 3px;
+
+  margin-bottom: 22px;
+
+  color: #fff8dc;
+
+  text-shadow:
+    /* contorno oro */
+    1px 1px 0 rgba(255,215,0,0.90),
+    -1px 1px 0 rgba(255,215,0,0.90),
+    1px -1px 0 rgba(255,215,0,0.90),
+    -1px -1px 0 rgba(255,215,0,0.90),
+
+    /* glow più elegante */
+    0 0 6px rgba(255,215,0,0.45),
+    0 0 12px rgba(255,215,0,0.28),
+    0 0 20px rgba(255,215,0,0.14),
+
+    /* profondità */
+    0 4px 12px rgba(0,0,0,0.75);
+
+  filter:
+    drop-shadow(0 0 8px rgba(255,215,0,0.22));
+
+  transition: all 0.25s ease;
+}
+
+.dg-modal-kicker {
+  margin-top: -10px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: rgba(255,215,0,0.72);
+}
+
+.dg-modal-code {
+  display: inline-block;
+  padding: 14px 24px;
+  border-radius: 999px;
+  font-size: 28px;
+  font-weight: 900;
+  margin-bottom: 24px;
+}
+
+.dg-modal-code.time {
+  background: linear-gradient(180deg,#ef4444,#991b1b);
+}
+
+.dg-modal-code.ammonition {
+  background: linear-gradient(180deg,#ffb020,#c76a00);
+}
+
+.dg-modal-code.dsq {
+  background: linear-gradient(180deg,#c084fc,#7e22ce);
+}
+
+.dg-modal-content {
+  text-align: left;
+  font-size: 16px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.92);
+}
+
+.dg-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.dg-field {
+  border-radius: 14px;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,0.06),
+      rgba(255,255,255,0.025)
+    );
+
+  box-shadow:
+    inset 0 0 18px rgba(255,255,255,0.025),
+    0 8px 20px rgba(0,0,0,0.18);
+}
+
+.dg-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.3px;
+  color: rgba(255,215,0,0.72);
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.dg-value {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.dg-reason-box {
+  margin-top: 8px;
+  margin-bottom: 22px;
+
+  border-radius: 16px;
+  padding: 18px;
+
+  border: 1px solid rgba(255,215,0,0.16);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,215,0,0.08),
+      rgba(255,255,255,0.03)
+    );
+}
+
+.dg-reason-text {
+  margin-top: 8px;
+  font-size: 17px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+.dg-discursive {
+  margin-top: 14px;
+  line-height: 1.7;
+  font-size: 16px;
+  opacity: 0.92;
+}
+
+.dg-modal-sign {
+  margin-top: 28px;
+  font-size: 18px;
+  font-weight: 900;
+  text-align: right;
+  opacity: 0.85;
+}
+
+.dg-modal-close {
+  margin-top: 24px;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 22px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 900;
+  color: white;
+  background: linear-gradient(180deg,#444,#222);
+}
+
     #splashScreen {
   position: fixed;
   inset: 0;
@@ -9804,6 +10230,24 @@ try {
 </div>
 
 <div class="race-dg-panel" id="raceDgPanel"></div>
+<div class="dg-modal" id="dgModal">
+  <div class="dg-modal-card">
+    <div class="dg-modal-flags">
+  <img src="/flags/13.png" alt="" />
+</div>
+    <div class="dg-modal-title">Poison Racing Team</div>
+
+    <div class="dg-modal-code" id="dgModalCode">P00</div>
+
+    <div class="dg-modal-content" id="dgModalContent"></div>
+
+    <div class="dg-modal-sign">La Direzione Gara</div>
+
+    <button class="dg-modal-close" id="dgModalClose" type="button">
+      Chiudi
+    </button>
+  </div>
+</div>
 </div>
 
     <div class="viewer-shell">
@@ -9865,8 +10309,67 @@ const racePngTabs = document.getElementById("racePngTabs");
 const racePngViewer = document.getElementById("racePngViewer");
 const racePngImage = document.getElementById("racePngImage");
 const raceDgPanel = document.getElementById("raceDgPanel");
+const dgModal = document.getElementById("dgModal");
+const dgModalCode = document.getElementById("dgModalCode");
+const dgModalContent = document.getElementById("dgModalContent");
+const dgModalClose = document.getElementById("dgModalClose");
 
-let selectedRacePng = "4";
+let selectedRacePng = "${currentRace}";
+
+function openDgModal(code, pilot, lap, timing, reason, sanction, type) {
+  if (!dgModal || !dgModalCode || !dgModalContent) return;
+
+  dgModalCode.textContent = code;
+
+  dgModalCode.className = "dg-modal-code " + type;
+
+  dgModalContent.innerHTML =
+
+  '<div class="dg-grid">' +
+
+    '<div class="dg-field">' +
+      '<div class="dg-label">Pilota</div>' +
+      '<div class="dg-value">' + pilot + '</div>' +
+    '</div>' +
+
+    '<div class="dg-field">' +
+      '<div class="dg-label">Giro</div>' +
+      '<div class="dg-value">' + lap + '</div>' +
+    '</div>' +
+
+    '<div class="dg-field">' +
+      '<div class="dg-label">Timing</div>' +
+      '<div class="dg-value">' + timing + '</div>' +
+    '</div>' +
+
+    '<div class="dg-field">' +
+      '<div class="dg-label">Sanzione</div>' +
+      '<div class="dg-value">' + sanction + '</div>' +
+    '</div>' +
+
+  '</div>' +
+
+  '<div class="dg-reason-box">' +
+    '<div class="dg-label">Motivo penalità</div>' +
+    '<div class="dg-reason-text">' + reason + '</div>' +
+  '</div>';
+
+  dgModal.classList.add("open");
+}
+
+if (dgModalClose) {
+  dgModalClose.addEventListener("click", function() {
+    dgModal.classList.remove("open");
+  });
+}
+
+if (dgModal) {
+  dgModal.addEventListener("click", function(e) {
+    if (e.target === dgModal) {
+      dgModal.classList.remove("open");
+    }
+  });
+}
 
 function renderRacePngTabs() {
   if (!racePngTabs) return;
@@ -9918,36 +10421,73 @@ function openRacePng(league) {
   racePngViewer.classList.add("loading");
   
   if (raceDgPanel) {
-  raceDgPanel.innerHTML =
-    '<div class="race-dg-title">' +
-      '🏁 Provvedimenti DG — Gara ' + selectedRacePng + ' ' + league +
-    '</div>' +
+  raceDgPanel.style.display = "none";
+  raceDgPanel.innerHTML = "";
 
-    '<div class="race-dg-subtitle">' +
-      'Clicca su una penalità per aprire il verbale ufficiale della Direzione Gara.' +
-    '</div>' +
+  const dgSrc =
+    "/Gare/G" + selectedRacePng + "/" + league + "-dg.json";
 
-    '<div class="race-dg-list">' +
+  fetch(dgSrc)
+    .then(function(response) {
+      if (!response.ok) return null;
+      return response.json();
+    })
+    .then(function(items) {
+      if (!Array.isArray(items) || items.length === 0) return;
 
-      '<div class="race-dg-row">' +
-        '<div>' +
-          '<div class="race-dg-pilot">Shark</div>' +
-          '<div class="race-dg-meta">Lap 08 • Timing 12:34</div>' +
-        '</div>' +
-        '<button class="dg-penalty-btn time">P16</button>' +
-      '</div>' +
+      let rowsHtml = "";
 
-      '<div class="race-dg-row">' +
-        '<div>' +
-          '<div class="race-dg-pilot">Martina</div>' +
-          '<div class="race-dg-meta">Lap 03 • Timing 04:51</div>' +
-        '</div>' +
-        '<button class="dg-penalty-btn ammonition">P01</button>' +
-      '</div>' +
+      items.forEach(function(item, index) {
+        const type = item.type || "time";
+        const btnId = "dgPenaltyBtn_" + selectedRacePng + "_" + league + "_" + index;
 
-    '</div>';
+        rowsHtml +=
+          '<button class="dg-driver-row" id="' + btnId + '" type="button">' +
+            '<span class="dg-driver-name">' + escapeHtml(item.pilot || "-") + '</span>' +
+            '<span class="dg-mini-pill ' + escapeHtml(type) + '">' + escapeHtml(item.code || "-") + '</span>' +
+            '<span class="dg-open-pill">APRI</span>' +
+          '</button>';
+      });
 
-  raceDgPanel.style.display = "grid";
+      raceDgPanel.innerHTML =
+        '<details class="dg-accordion">' +
+          '<summary class="dg-accordion-summary">' +
+            '<div>' +
+              '<div class="dg-accordion-title">Provvedimenti Direzione Gara</div>' +
+              '<div class="dg-accordion-subtitle">Gara ' + selectedRacePng + ' • ' + league + '</div>' +
+            '</div>' +
+            '<span class="dg-accordion-action">Apri</span>' +
+          '</summary>' +
+          '<div class="dg-accordion-content">' +
+            rowsHtml +
+          '</div>' +
+        '</details>';
+
+      raceDgPanel.style.display = "grid";
+
+      items.forEach(function(item, index) {
+        const btnId = "dgPenaltyBtn_" + selectedRacePng + "_" + league + "_" + index;
+        const btn = document.getElementById(btnId);
+
+        if (!btn) return;
+
+        btn.addEventListener("click", function() {
+          openDgModal(
+            item.code || "-",
+            item.pilot || "-",
+            item.lap || "-",
+            item.timing || "-",
+            item.reason || "-",
+            item.sanction || "-",
+            item.type || "time"
+          );
+        });
+      });
+    })
+    .catch(function() {
+      raceDgPanel.style.display = "none";
+      raceDgPanel.innerHTML = "";
+    });
 }
 
   const img = new Image();
@@ -10254,6 +10794,93 @@ setTimeout(() => {
   if (splash) splash.style.display = "none";
 }, 8000);
   </script>
+
+<div id="prtAccessCounterBox">
+  <div class="prtAccessCounterLabel">👁️ ACCESSI PORTALE PRT</div>
+  <div id="prtAccessCounterNumber" class="prtAccessCounterNumber"></div>
+</div>
+
+<style>
+#prtAccessCounterBox{
+  display:none;
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  z-index:9999;
+  padding:12px 16px;
+  border-radius:16px;
+  background:rgba(5,10,25,.88);
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 0 22px rgba(0,180,255,.22);
+  color:#fff;
+  text-align:center;
+  font-family:Arial,sans-serif;
+  opacity:1;
+  transition:opacity 2.5s ease;
+}
+
+.prtAccessCounterLabel{
+  font-size:11px;
+  font-weight:800;
+}
+
+.prtAccessCounterNumber{
+  margin-top:4px;
+  font-size:26px;
+  font-weight:900;
+}
+
+@media (max-width:700px){
+  #prtAccessCounterBox{
+    right:10px;
+    bottom:10px;
+  }
+}
+</style>
+
+<script>
+(function(){
+  const BASE_VISITS = 378;
+  const NAMESPACE = "prt-s2k26";
+  const COUNTER_NAME = "accessi-portale-prt";
+
+  const boxEl = document.getElementById("prtAccessCounterBox");
+  const numberEl = document.getElementById("prtAccessCounterNumber");
+
+  fetch(\`https://api.counterapi.dev/v1/\${NAMESPACE}/\${COUNTER_NAME}/up\`)
+    .then(r => r.json())
+    .then(data => {
+      const realVisits = Number(data?.count || data?.value || 0);
+
+      numberEl.textContent =
+        (BASE_VISITS + realVisits).toLocaleString("it-IT");
+
+      boxEl.style.display = "block";
+
+      setTimeout(() => {
+        boxEl.style.opacity = "0";
+
+        setTimeout(() => {
+          boxEl.style.display = "none";
+        }, 2600);
+      }, 4500);
+    })
+    .catch(() => {
+      numberEl.textContent = BASE_VISITS.toLocaleString("it-IT");
+
+      boxEl.style.display = "block";
+
+      setTimeout(() => {
+        boxEl.style.opacity = "0";
+
+        setTimeout(() => {
+          boxEl.style.display = "none";
+        }, 2600);
+      }, 4500);
+    });
+})();
+</script>
+
 </body>
 </html>`
 
