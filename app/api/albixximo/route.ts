@@ -306,6 +306,7 @@ function cleanCar(s: string) {
     .replace(/\s+'/g, " '")
     .replace(/\b(Megane)\b/gi, "Mégane")
     .replace(/\bHuracan\b/gi, "Huracán")
+    .replace(/\bNSX\s+CONCEPT\s*GT\b/gi, "NSX CONCEPT-GT")
     .replace(/\bGr ?4\b/gi, "Gr.4")
     .replace(/\bGT ?4\b/gi, "GT4")
     .replace(/\bTC ?'?24\b/gi, "TC '24")
@@ -359,6 +360,10 @@ const KNOWN_CARS = [
   "911 RSR (991) '17",
   "GR Supra Racing Concept '18",
   "S-FR Racing Concept '16",
+    "NSX CONCEPT-GT '16",
+  "RC F GT500 '16",
+  "RS 5 Turbo DTM '19",
+  "GT-R NISMO GT500 '16",
   "F3500-B",
 ]
 
@@ -460,6 +465,13 @@ function looksLikeKnownCarToken(s: string) {
 t.includes("racing concept") ||
     t.includes("silvia") ||
     t.includes("touring car") ||
+        t.includes("concept-gt") ||
+    t.includes("concept gt") ||
+    t.includes("gt500") ||
+    t.includes("rc f") ||
+    t.includes("rs 5") ||
+    t.includes("turbo dtm") ||
+    t.includes("nismo gt500") ||
     t.includes("tt cup") ||
     t.includes("4c")
   )
@@ -921,6 +933,13 @@ t.includes("racing concept") ||
       t.includes("touring car") ||
       t.includes("tt cup") ||
       t === "4c" ||
+            t.includes("concept-gt") ||
+      t.includes("concept gt") ||
+      t.includes("gt500") ||
+      t.includes("rc f") ||
+      t.includes("rs 5") ||
+      t.includes("turbo dtm") ||
+      t.includes("nismo gt500") ||
       t.startsWith("4c ")
     )
   }
@@ -965,7 +984,12 @@ t.includes("racing concept") ||
       t.includes("mazda 3") ||
       t.includes("gt-r") ||
       t.includes("gtr") ||
-      t.includes("650s")
+      t.includes("650s") ||
+            t.includes("nsx concept") ||
+      t.includes("rc f") ||
+      t.includes("rs 5") ||
+      t.includes("gt-r nismo") ||
+      t.includes("nismo")
     )
   }
 
