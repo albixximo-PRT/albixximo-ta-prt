@@ -6523,9 +6523,34 @@ function resetBaselineDraft() {
 }, [previewRows])
 
   const leagueDriverResolution = useMemo(() => {
-  const officialLeaguePilots = (workbenchDriverLeagueMap[selectedLeague] || [])
-    .map((name) => String(name || "").trim())
-    .filter(Boolean)
+  const roundMovementsForResolution =
+  championshipState.roundMovements?.[currentRace] || {}
+
+const outgoingDriversThisRound =
+  [3, 6, 9, 12].includes(currentRace)
+    ? CHAMPIONSHIP_LEAGUES.flatMap((league) =>
+        (roundMovementsForResolution[league] || [])
+          .filter((entry) => entry.fromLeague === selectedLeague)
+          .map((entry) => String(entry.driverName || "").trim())
+      )
+    : []
+
+const officialLeaguePilots = [
+  ...(workbenchDriverLeagueMap[selectedLeague] || []),
+  ...outgoingDriversThisRound,
+]
+  .map((name) => String(name || "").trim())
+  .filter(Boolean)
+  .filter((pilot, index, array) => {
+    const normalized = normalizeDriverNameForChampionship(pilot)
+
+    return (
+      array.findIndex(
+        (item) =>
+          normalizeDriverNameForChampionship(item) === normalized
+      ) === index
+    )
+  })
 
   const aliasMapForLeague = driverAliasMap[selectedLeague] || {}
 
@@ -6671,6 +6696,8 @@ return {
   selectedLeague,
   dismissedUnknownDrivers,
   isSpecialGara7Platinum,
+  currentRace,
+  championshipState,
 ])
 
 const unresolvedLeagueDrivers = leagueDriverResolution.unresolvedCandidates
@@ -8244,10 +8271,23 @@ const finalRowsWithDnp = useMemo<DisplayRow[]>(() => {
     ),
   ])
 
+  const incomingDriversThisRound = new Set(
+  (currentRoundMovements[raceLeague] || [])
+    .filter((entry) => entry.toLeague === raceLeague)
+    .map((entry) =>
+      normalizeDriverNameForChampionship(entry.driverName)
+    )
+)
+  
   const missingPilots = drawerPilots.filter((pilot) => {
-    const key = normalizeDriverNameForChampionship(pilot)
-    return key && !existingKeysAfterDsq.has(key)
-  })
+  const key = normalizeDriverNameForChampionship(pilot)
+
+  return (
+    key &&
+    !existingKeysAfterDsq.has(key) &&
+    !incomingDriversThisRound.has(key)
+  )
+})
 
   const dnpRows = missingPilots.map((pilot, index) =>
     createDnpDisplayRow(
