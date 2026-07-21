@@ -6751,7 +6751,13 @@ const incomingDriversAfterCurrentRace = new Set(
   )
 )
 
-  const maxSourcePos = rowsWithPole.reduce(
+  const filteredRowsWithPole = rowsWithPole.filter((row) => {
+  const key = normalizeDriverNameForChampionship(row.pilota)
+
+  return !incomingDriversAfterCurrentRace.has(key)
+})
+
+const maxSourcePos = filteredRowsWithPole.reduce(
     (max, row) => Math.max(max, Number(row.sourcePosGara) || 0),
     0
   )
@@ -6766,7 +6772,7 @@ const incomingDriversAfterCurrentRace = new Set(
     )
   })
   .map((pilot, index) => ({
-    posGara: rowsWithPole.length + index + 1,
+    posGara: filteredRowsWithPole.length + index + 1,
     sourcePosGara: maxSourcePos + index + 1,
     pilota: pilot,
     auto: "---",
@@ -6777,7 +6783,7 @@ const incomingDriversAfterCurrentRace = new Set(
     pole: "",
   }))
 
-  return [...rowsWithPole, ...missingDnpRows]
+  return [...filteredRowsWithPole, ...missingDnpRows]
 }, [
   leagueDriverResolution.baseRows,
   workbenchDriverLeagueMap,
