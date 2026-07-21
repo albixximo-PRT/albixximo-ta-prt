@@ -8317,11 +8317,17 @@ const finalRowsWithDnp = useMemo<DisplayRow[]>(() => {
   ])
 
   const incomingDriversThisRound = new Set(
-  (currentRoundMovements[raceLeague] || [])
-    .filter((entry) => entry.toLeague === raceLeague)
-    .map((entry) =>
-      normalizeDriverNameForChampionship(entry.driverName)
-    )
+  CHAMPIONSHIP_LEAGUES.flatMap((league) =>
+    (currentRoundMovements[league] || [])
+      .filter(
+        (entry) =>
+          entry.toLeague === raceLeague &&
+          entry.fromLeague !== raceLeague
+      )
+      .map((entry) =>
+        normalizeDriverNameForChampionship(entry.driverName)
+      )
+  )
 )
   
   const missingPilots = drawerPilots.filter((pilot) => {
@@ -8349,6 +8355,7 @@ const finalRowsWithDnp = useMemo<DisplayRow[]>(() => {
   workbenchDriverLeagueMap,
   effectiveLega,
   selectedLeague,
+  currentRoundMovements,
 ])
 
 const driversToRemoveAfterDsq = useMemo(() => {
