@@ -10550,19 +10550,38 @@ renderRacePngTabs();
 
   const sections = [];
 
+const promotedInGroups = {};
+const relegatedFromGroups = {};
+
 summary.promotedIn.forEach(function(item) {
-  sections.push({
-    title: "Promossi in " + item.toLeague,
-    type: "promote",
-    items: [item],
-  });
+  if (!promotedInGroups[item.toLeague]) {
+    promotedInGroups[item.toLeague] = [];
+  }
+
+  promotedInGroups[item.toLeague].push(item);
 });
 
 summary.relegatedFrom.forEach(function(item) {
+  if (!relegatedFromGroups[item.toLeague]) {
+    relegatedFromGroups[item.toLeague] = [];
+  }
+
+  relegatedFromGroups[item.toLeague].push(item);
+});
+
+Object.entries(promotedInGroups).forEach(([targetLeague, items]) => {
   sections.push({
-    title: "Retrocessi in " + item.toLeague,
+    title: "Promossi in " + targetLeague,
+    type: "promote",
+    items,
+  });
+});
+
+Object.entries(relegatedFromGroups).forEach(([targetLeague, items]) => {
+  sections.push({
+    title: "Retrocessi in " + targetLeague,
     type: "relegate",
-    items: [item],
+    items,
   });
 });
 
