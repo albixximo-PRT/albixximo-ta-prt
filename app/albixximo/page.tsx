@@ -3587,6 +3587,7 @@ const vampireWarsFontStyle = `
 
 export default function Page() {
   const [files, setFiles] = useState<File[]>([])
+  const [shortLobbyMode, setShortLobbyMode] = useState(false)
   const [csv, setCsv] = useState("")
   const [rows, setRows] = useState<ExtractRow[]>([])
   const [qualiRows, setQualiRows] = useState<QualiRow[]>([])
@@ -10970,6 +10971,7 @@ async function run(targetLeague?: ChampionshipLeagueKey) {
   try {
     const fd = new FormData()
     for (const f of files) fd.append("files", f)
+      fd.append("shortLobbyMode", String(shortLobbyMode))
 
     const res = await fetch("/api/albixximo", { method: "POST", body: fd })
     const data = await res.json()
@@ -12414,9 +12416,43 @@ const lastCreatedMovementText = useMemo(() => {
     boxShadow: "0 10px 30px rgba(0,0,0,0.20)",
   }}
 >
-  <div style={{ fontWeight: 900, opacity: 0.95 }}>Genera Estrazione tabella</div>
+  <div style={{ fontWeight: 900, opacity: 0.95 }}>
+  Genera Estrazione tabella
+</div>
 
-  <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+<label
+  style={{
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 10,
+    width: "fit-content",
+    padding: "10px 12px",
+    borderRadius: 14,
+    border: shortLobbyMode
+      ? "1px solid rgba(34,197,94,0.45)"
+      : "1px solid rgba(255,255,255,0.12)",
+    background: shortLobbyMode
+      ? "rgba(34,197,94,0.14)"
+      : "rgba(255,255,255,0.05)",
+    color: "white",
+    cursor: "pointer",
+    fontWeight: 800,
+    letterSpacing: 0.3,
+    fontSize: 12,
+    userSelect: "none",
+  }}
+>
+  <input
+    type="checkbox"
+    checked={shortLobbyMode}
+    onChange={(e) => setShortLobbyMode(e.target.checked)}
+    style={{ transform: "scale(1.1)" }}
+  />
+
+  Modalità lobby corta — 8 piloti o meno
+</label>
+
+<div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
     <button
   onClick={handleGenerateExtractionClick}
       disabled={loading || !canRun}

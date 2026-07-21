@@ -1079,6 +1079,160 @@ t.includes("racing concept") ||
   return out
 }
 
+function parseGaraShortLobby(rawText: string): RaceRow[] {
+  console.log("SHORT LOBBY MODE ATTIVO")
+
+  /*
+   * Il parser normale continua a occuparsi di:
+   * - posizioni
+   * - piloti
+   * - auto
+   *
+   * Qui ricostruiamo soltanto:
+   * - tempo totale del vincitore
+   * - distacchi
+   * - migliori giri
+   */
+  const baseRows = parseGaraFromColumnText(rawText)
+
+  if (!baseRows.length || baseRows.length > 8) {
+    console.log(
+      "SHORT LOBBY → numero righe non valido:",
+      baseRows.length
+    )
+
+    return baseRows
+  }
+
+  const lines = rawText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  const idxBest = lines.findIndex((line) =>
+    /MIGLIOR\s+GIRO/i.test(line)
+  )
+
+  if (idxBest === -1) {
+    console.log("SHORT LOBBY → intestazione MIGLIOR GIRO non trovata")
+    return baseRows
+  }
+
+  /*
+   * Nelle lobby corte OCR.space può restituire:
+   *
+   * TEMPO
+   * PENALITA
+   * MIGLIOR GIRO
+   * tempo totale
+   * distacchi
+   * migliori giri
+   *
+   * quindi leggiamo tutti i valori successivi all'ultima intestazione.
+   */
+  const valueLines = lines
+    .slice(idxBest + 1)
+    .map((line) => normalizeTimeText(line))
+    .filter(Boolean)
+
+  const totalTimeRegex =
+    /^(?:\d+:)?\d{1,2}:\d{2}\.\d{3}$/
+
+  const gapRegex =
+    /^\+\d+(?::\d{2})?\.\d{3}$/
+
+  const lapTimeRegex =
+    /^\d{1,2}:\d{2}\.\d{3}$/
+
+  /*
+   * Il tempo totale del vincitore è il primo tempo assoluto
+   * chiaramente superiore a un normale giro.
+   */
+  const winnerTotal = valueLines.find((value) => {
+    if (!totalTimeRegex.test(value)) return false
+
+    const ms = parseRaceTotalToMs(value)
+    return ms != null && ms >= 10 * 60 * 1000
+  }) ?? ""
+
+  /*
+   * I distacchi sono riconoscibili direttamente dal segno +.
+   */
+  const gaps = valueLines
+    .filter((value) => gapRegex.test(value))
+    .map((value) => normalizeGapText(value))
+    .slice(0, Math.max(0, baseRows.length - 1))
+
+  /*
+   * Prendiamo tutti i tempi compatibili con un giro,
+   * escludendo il tempo totale della gara.
+   *
+   * Potrebbero esserci anche valori della colonna PENALITA,
+   * come 1:00.000. Per questo individuiamo il gruppo di tempi
+   * più omogeneo, che corrisponde ai veri migliori giri.
+   */
+  const lapCandidates = valueLines
+    .filter((value) => lapTimeRegex.test(value))
+    .filter((value) => value !== winnerTotal)
+    .map((value) => ({
+      value,
+      ms: parseLapTimeToMs(value),
+    }))
+    .filter(
+      (
+        item
+      ): item is {
+        value: string
+        ms: number
+      } => item.ms != null
+    )
+
+  let bestLapCandidates: string[] = []
+
+  if (lapCandidates.length) {
+    let bestCluster: typeof lapCandidates = []
+
+    for (const reference of lapCandidates) {
+      const cluster = lapCandidates.filter((candidate) => {
+        const ratio = candidate.ms / reference.ms
+        return ratio >= 0.75 && ratio <= 1.25
+      })
+
+      if (cluster.length > bestCluster.length) {
+        bestCluster = cluster
+      }
+    }
+
+    bestLapCandidates = bestCluster
+      .slice(0, baseRows.length)
+      .map((item) => normalizeTimeText(item.value))
+  }
+
+  const repairedRows = baseRows.map((row, index) => {
+    if (index === 0) {
+      return {
+        ...row,
+        tempoTotale: winnerTotal,
+        distacco: "",
+        migliorGiro: bestLapCandidates[index] ?? "",
+      }
+    }
+
+    return {
+      ...row,
+      tempoTotale: "",
+      distacco: gaps[index - 1] ?? "",
+      migliorGiro: bestLapCandidates[index] ?? "",
+    }
+  })
+
+  console.log("SHORT LOBBY → tempo vincitore:", winnerTotal)
+  console.log("SHORT LOBBY → distacchi:", gaps)
+  console.log("SHORT LOBBY → migliori giri:", bestLapCandidates)
+
+  return repairedRows
+}
+
 /* -------------------- Classification -------------------- */
 
 function classifyText(text: string): "quali" | "race" | "unknown" {
@@ -1401,6 +1555,9 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData()
     const files = formData.getAll("files").filter(Boolean) as File[]
 
+    const shortLobbyMode =
+  String(formData.get("shortLobbyMode") || "").toLowerCase() === "true"
+
     if (!files.length) {
       return Response.json({ error: "Nessun file ricevuto" }, { status: 400 })
     }
@@ -1525,13 +1682,19 @@ export async function POST(req: NextRequest) {
           debugChunks.push(`FILE #${idx + 1} QUALI TIMES ONLY — ${f.name}\n\n${textTimes}`)
         }
       } else if (kind === "race") {
-        const part = parseGaraFromColumnText(text)
+        const part = shortLobbyMode
+  ? parseGaraShortLobby(text)
+  : parseGaraFromColumnText(text)
         for (const r of part) {
           raceRowsMerged.set(r.pos, { ...r, auto: normalizeKnownCar(r.auto) })
         }
       } else {
         const q = parseQualificaFromColumnText(text)
-        const g = hasRaceHeaders ? parseGaraFromColumnText(text) : []
+        const g = hasRaceHeaders
+  ? shortLobbyMode
+    ? parseGaraShortLobby(text)
+    : parseGaraFromColumnText(text)
+  : []
 
         if (!hasRaceHeaders) {
           qualiTexts.push(text)

@@ -67,7 +67,11 @@ async function callOcrSpace(apiKey: string, jpegBuffer: Buffer, engine: "1" | "2
       fd.append("OCREngine", engine)
       fd.append("scale", "false")
       fd.append("isTable", "false")
-      fd.append("file", new Blob([new Uint8Array(jpegBuffer)], { type: "image/jpeg" }), "gt7.jpg")
+      fd.append(
+  "file",
+  new Blob([new Uint8Array(jpegBuffer)], { type: "image/jpeg" }),
+  "gt7.jpg"
+)
 
       const res = await fetchWithTimeout(
         endpoint,
@@ -269,6 +273,7 @@ function normalizePilot(s: string) {
     .replace(/\bM__Apex\b/gi, "M_ApeX_")
     .replace(/\bGrollo_?78\b/gi, "Grollo78")
     .replace(/\bZzic3Fr0St--\b/gi, "ZzIc3Fr0St-_-")
+    .replace(/\bmani\b/gi, "Grollo78")
 
     .trim()
 }
@@ -301,6 +306,7 @@ function cleanCar(s: string) {
     .replace(/\s+'/g, " '")
     .replace(/\b(Megane)\b/gi, "Mégane")
     .replace(/\bHuracan\b/gi, "Huracán")
+    .replace(/\bNSX\s+CONCEPT\s*GT\b/gi, "NSX CONCEPT-GT")
     .replace(/\bGr ?4\b/gi, "Gr.4")
     .replace(/\bGT ?4\b/gi, "GT4")
     .replace(/\bTC ?'?24\b/gi, "TC '24")
@@ -323,6 +329,7 @@ const KNOWN_CARS = [
   "Mégane Trophy '11",
   "Swift Sport Gr.4",
   "458 Italia Gr.4",
+  "458 Italia GT3 '13",
   "TT Cup '16",
   "4C Gr.4",
   "ELANTRA N TC '24",
@@ -333,6 +340,31 @@ const KNOWN_CARS = [
   "MAZDA3 Gr.4",
   "GT-R Gr.4",
   "650S Gr.4",
+    "TS050 - Hybrid '16",
+  "919 Hybrid '16",
+  "GR010 HYBRID '21",
+  "R18 '16",
+  "908 HDi FAP '10",
+  "RCZ Gr.B Rally Car",
+  "Lancer Evolution Final Gr.B Rally Car",
+  "WRX Gr.B Rally Car",
+  "GT-R Gr.B Rally Car",
+  "NSX Gr.B Rally Car",
+  "86 Gr.B Rally Car",
+    "296 GT3 '23",
+  "911 GT3 R (992) '22",
+  "R.S.01 GT3 '16",
+  "Beetle Gr.3",
+  "R8 LMS Evo '19",
+  "Mercedes-AMG GT3 '20",
+  "911 RSR (991) '17",
+  "GR Supra Racing Concept '18",
+  "S-FR Racing Concept '16",
+    "NSX CONCEPT-GT '16",
+  "RC F GT500 '16",
+  "RS 5 Turbo DTM '19",
+  "GT-R NISMO GT500 '16",
+  "F3500-B",
 ]
 
 function normalizeCarLoose(s: string) {
@@ -388,6 +420,18 @@ function looksLikeKnownCarToken(s: string) {
   if (!t) return false
 
   return (
+    t.includes("f3500-b") ||
+        t.includes("ts050") ||
+    t.includes("919 hybrid") ||
+    t.includes("gr010") ||
+    t.includes("r18") ||
+    t.includes("908 hdi") ||
+        t.includes("gr.b") ||
+    t.includes("grb") ||
+    t.includes("rally car") ||
+    t.includes("rcz") ||
+    t.includes("lancer evolution") ||
+    t.includes("wrx") ||
     t.includes("gr.4") ||
     t.includes("gr4") ||
     t.includes("gt4") ||
@@ -403,8 +447,31 @@ function looksLikeKnownCarToken(s: string) {
     t.includes("gtr") ||
     t.includes("650s") ||
     t.includes("atenza") ||
+        t.includes("296") ||
+    t.includes("911 gt3 r") ||
+    t.includes("(992)") ||
+    t.includes("r.s.01") ||
+    t.includes("rs.01") ||
+    t.includes("beetle") ||
+    t.includes("r8 lms") ||
+    t.includes("lms evo") ||
+    t.includes("mercedes-amg") ||
+    t.includes("amg gt3") ||
+    t.includes("911 rsr") ||
+    t.includes("(991)") ||
+    t.includes("supra racing concept") ||
+    t.includes("gr supra") ||
+    t.includes("s-fr") ||
+t.includes("racing concept") ||
     t.includes("silvia") ||
     t.includes("touring car") ||
+        t.includes("concept-gt") ||
+    t.includes("concept gt") ||
+    t.includes("gt500") ||
+    t.includes("rc f") ||
+    t.includes("rs 5") ||
+    t.includes("turbo dtm") ||
+    t.includes("nismo gt500") ||
     t.includes("tt cup") ||
     t.includes("4c")
   )
@@ -836,9 +903,15 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
   const looksLikeModel = (s: string) => {
     const t = normalizeCarLoose(s)
     return (
+      t.includes("f3500-b") ||
       /\b(gt3|rsr|lms|evo)\b/i.test(t) ||
       /\br8\b/i.test(t) ||
       /\b911\b/i.test(t) ||
+            t.includes("ts050") ||
+      t.includes("919 hybrid") ||
+      t.includes("gr010") ||
+      t.includes("r18") ||
+      t.includes("908 hdi") ||
       t.includes("gr.4") ||
       t.includes("gr4") ||
       t.includes("gt4") ||
@@ -854,22 +927,39 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
       t.includes("gt-r") ||
       t.includes("650s") ||
       t.includes("atenza") ||
+      t.includes("s-fr") ||
+t.includes("racing concept") ||
       t.includes("silvia") ||
       t.includes("touring car") ||
       t.includes("tt cup") ||
       t === "4c" ||
+            t.includes("concept-gt") ||
+      t.includes("concept gt") ||
+      t.includes("gt500") ||
+      t.includes("rc f") ||
+      t.includes("rs 5") ||
+      t.includes("turbo dtm") ||
+      t.includes("nismo gt500") ||
       t.startsWith("4c ")
     )
   }
 
-  const hasId = (s: string) =>
-    /\(\d{3}\)/.test(s) || /'\d{2}\b/.test(s) || /\b\d{2}\b/.test(s) || /\bGr\.?4\b/i.test(s)
+    const hasId = (s: string) =>
+    /\(\d{3}\)/.test(s) ||
+    /'\d{2}\b/.test(s) ||
+    /\b\d{2}\b/.test(s) ||
+    /\bGT3\b/i.test(s) ||
+    /\bGr\.?4\b/i.test(s) ||
+    /\bGr\.?B\b/i.test(s) ||
+      /F3500-B/i.test(s) ||
+    /Rally\s+Car/i.test(s)
 
   const isCompleteCar = (s: string) => looksLikeModel(s) && hasId(s)
 
   const looksLikeCarStart = (tok: string) => {
     const t = normalizeCarLoose(tok)
     return (
+      t.includes("f3500-b") ||
       t === "911" ||
       t === "r8" ||
       /^911\b/.test(t) ||
@@ -894,7 +984,12 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
       t.includes("mazda 3") ||
       t.includes("gt-r") ||
       t.includes("gtr") ||
-      t.includes("650s")
+      t.includes("650s") ||
+            t.includes("nsx concept") ||
+      t.includes("rc f") ||
+      t.includes("rs 5") ||
+      t.includes("gt-r nismo") ||
+      t.includes("nismo")
     )
   }
 
@@ -1605,15 +1700,12 @@ export async function POST(req: NextRequest) {
   const k = r.pilota ? pilotKey(r.pilota) : ""
 
   const qExact = k ? qualiByPilot.get(k) : undefined
-  const qLoose = !qExact && r.pilota ? findQualiByPilotLoose(r.pilota, qualiRows) : undefined
-  const qPos = qualiByPosDirect.get(r.pos)
+const qLoose = !qExact && r.pilota ? findQualiByPilotLoose(r.pilota, qualiRows) : undefined
 
-  const tempoQualifica =
-    normalizeTimeText((qExact?.tempo ?? "").trim()) ||
-    normalizeTimeText((qLoose?.tempo ?? "").trim()) ||
-    normalizeTimeText((qPos?.tempo ?? "").trim()) ||
-    normalizeTimeText((qualiByPos.get(r.pos) ?? "").trim()) ||
-    ""
+const tempoQualifica =
+  normalizeTimeText((qExact?.tempo ?? "").trim()) ||
+  normalizeTimeText((qLoose?.tempo ?? "").trim()) ||
+  ""
 
   const raceAuto = normalizeKnownCar((r.auto || "").trim())
 
@@ -1718,6 +1810,7 @@ export async function POST(req: NextRequest) {
       tool: "Albixximo Race Tools — Race CSV Extractor PRO",
       count: outTable.length,
       rows: outTable,
+      qualiRows,
       csv,
       polePilot,
       unionMeta,
