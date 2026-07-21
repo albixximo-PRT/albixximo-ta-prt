@@ -8546,56 +8546,65 @@ async function downloadChampionshipGeneralHtmlExport() {
 
   const isMovementRoundForHtml = [3, 6, 9, 12].includes(currentRace)
 
-  const movementSummaryByLeague: Record<
-    ChampionshipLeagueKey,
-    { promotions: string[]; relegations: string[] }
-  > = {
-    ELITE: { promotions: [], relegations: [] },
-    PLATINUM: { promotions: [], relegations: [] },
-    MASTER: { promotions: [], relegations: [] },
-    PRO: { promotions: [], relegations: [] },
-    GT: { promotions: [], relegations: [] },
-  }
+  type LeagueMovementItem = {
+  driverName: string
+  fromLeague: ChampionshipLeagueKey
+  toLeague: ChampionshipLeagueKey
+}
+
+type LeagueMovementSummary = {
+  promotedIn: LeagueMovementItem[]
+  relegatedFrom: LeagueMovementItem[]
+  promotedFrom: LeagueMovementItem[]
+  relegatedIn: LeagueMovementItem[]
+}
+
+const createEmptyMovementSummary = (): LeagueMovementSummary => ({
+  promotedIn: [],
+  relegatedFrom: [],
+  promotedFrom: [],
+  relegatedIn: [],
+})
+
+const movementSummaryByLeague: Record<
+  ChampionshipLeagueKey,
+  LeagueMovementSummary
+> = {
+  ELITE: createEmptyMovementSummary(),
+  PLATINUM: createEmptyMovementSummary(),
+  MASTER: createEmptyMovementSummary(),
+  PRO: createEmptyMovementSummary(),
+  GT: createEmptyMovementSummary(),
+}
 
   if (isMovementRoundForHtml) {
-    const roundMovementState = championshipState.roundMovements?.[currentRace] || {}
+  const roundMovementState =
+    championshipState.roundMovements?.[currentRace] || {}
 
-    for (const league of CHAMPIONSHIP_LEAGUES) {
-      const entries = roundMovementState[league] || []
+  for (const sourceLeague of CHAMPIONSHIP_LEAGUES) {
+    const entries = roundMovementState[sourceLeague] || []
 
-      for (const entry of entries) {
-        const text = `${entry.driverName} • ${entry.fromLeague} → ${entry.toLeague}`
+    for (const entry of entries) {
+      if (entry.fromLeague === entry.toLeague) continue
 
-        if (entry.fromLeague === entry.toLeague) continue
+      const movementData = {
+  driverName: entry.driverName,
+  fromLeague: entry.fromLeague,
+  toLeague: entry.toLeague,
+}
 
-        if (entry.type === "promote") {
-          if (movementSummaryByLeague[entry.fromLeague]) {
-            movementSummaryByLeague[entry.fromLeague].promotions.push(text)
-          }
+if (entry.type === "promote") {
+  movementSummaryByLeague[entry.fromLeague].promotedIn.push(movementData)
+  movementSummaryByLeague[entry.toLeague].promotedFrom.push(movementData)
+}
 
-          if (
-            movementSummaryByLeague[entry.toLeague] &&
-            entry.toLeague !== entry.fromLeague
-          ) {
-            movementSummaryByLeague[entry.toLeague].promotions.push(text)
-          }
-        }
-
-        if (entry.type === "relegate") {
-          if (movementSummaryByLeague[entry.fromLeague]) {
-            movementSummaryByLeague[entry.fromLeague].relegations.push(text)
-          }
-
-          if (
-            movementSummaryByLeague[entry.toLeague] &&
-            entry.toLeague !== entry.fromLeague
-          ) {
-            movementSummaryByLeague[entry.toLeague].relegations.push(text)
-          }
-        }
-      }
+if (entry.type === "relegate") {
+  movementSummaryByLeague[entry.fromLeague].relegatedIn.push(movementData)
+  movementSummaryByLeague[entry.toLeague].relegatedFrom.push(movementData)
+}
     }
   }
+}
 
   let logoDataUrl = ""
 
@@ -9386,34 +9395,79 @@ try {
   border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
-.movements-label-promote {
+.movements-label-promote,
+.movements-label-relegate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
   font-size: 13px;
   font-weight: 900;
   letter-spacing: 0.45px;
   text-transform: uppercase;
-  color: #22c55e;
+
   padding-top: 2px;
 }
 
+.movements-label-promote {
+  color: #22c55e;
+}
+
 .movements-label-relegate {
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 0.45px;
-  text-transform: uppercase;
   color: #ef4444;
-  padding-top: 2px;
+}
+
+.movement-arrow {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.movement-arrow-up {
+  color: #22c55e;
+}
+
+.movement-arrow-down {
+  color: #ef4444;
 }
 
 .movements-list {
   display: grid;
-  gap: 7px;
+  gap: 8px;
 }
 
-.movements-item {
+.movement-driver-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  width: fit-content;
+
+  padding: 8px 12px;
+  border-radius: 999px;
+
   font-size: 14px;
-  line-height: 1.45;
-  color: rgba(255,255,255,0.88);
-  font-weight: 700;
+  font-weight: 800;
+
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.movement-driver-badge-promote {
+  background: rgba(34, 197, 94, 0.14);
+  color: #d9ffe6;
+}
+
+.movement-driver-badge-relegate {
+  background: rgba(239, 68, 68, 0.14);
+  color: #ffe0e0;
+}
+
+.movement-driver-dot {
+  width: 8px;
+  height: 8px;
+
+  border-radius: 999px;
+
+  background: currentColor;
 }
 
 .movements-empty {
@@ -10488,47 +10542,129 @@ renderRacePngTabs();
   }
 
   const summary = movementSummaryByLeague[league] || {
-    promotions: [],
-    relegations: [],
+    promotedIn: [],
+    relegatedFrom: [],
+    promotedFrom: [],
+    relegatedIn: [],
   };
 
-  const hasPromotions = Array.isArray(summary.promotions) && summary.promotions.length > 0;
-  const hasRelegations = Array.isArray(summary.relegations) && summary.relegations.length > 0;
-  const hasMovements = hasPromotions || hasRelegations;
+  const sections = [
+    {
+      title: "Promossi in " + league,
+      type: "promote",
+      items: summary.promotedIn,
+    },
+    {
+      title: "Retrocessi da " + league,
+      type: "relegate",
+      items: summary.relegatedFrom,
+    },
+  ];
+
+  const promotedFromGroups = {};
+
+  summary.promotedFrom.forEach(function(item) {
+    if (!promotedFromGroups[item.fromLeague]) {
+      promotedFromGroups[item.fromLeague] = [];
+    }
+
+    promotedFromGroups[item.fromLeague].push(item);
+  });
+
+  Object.keys(promotedFromGroups).forEach(function(sourceLeague) {
+    sections.push({
+      title: "Promossi da " + sourceLeague,
+      type: "promote",
+      items: promotedFromGroups[sourceLeague],
+    });
+  });
+
+  const relegatedInGroups = {};
+
+  summary.relegatedIn.forEach(function(item) {
+    if (!relegatedInGroups[item.toLeague]) {
+      relegatedInGroups[item.toLeague] = [];
+    }
+
+    relegatedInGroups[item.toLeague].push(item);
+  });
+
+  Object.keys(relegatedInGroups).forEach(function(destinationLeague) {
+    sections.push({
+      title: "Retrocessi in " + destinationLeague,
+      type: "relegate",
+      items: relegatedInGroups[destinationLeague],
+    });
+  });
 
   let inner = "";
+
   inner += '<details class="movements-details">';
   inner += '<summary class="movements-summary">';
-  inner += '<span><span style="color:#22c55e;">PROMOZIONI</span> - <span style="color:#ef4444;">RETROCESSIONI</span></span>';
-  inner += '<span style="opacity:0.78; font-size:12px;">Tap / Click</span>';
+  inner +=
+    '<span><span style="color:#22c55e;">PROMOZIONI</span> - <span style="color:#ef4444;">RETROCESSIONI</span></span>';
+  inner +=
+    '<span style="opacity:0.78; font-size:12px;">Tap / Click</span>';
   inner += "</summary>";
+
   inner += '<div class="movements-content">';
 
-  if (hasPromotions) {
+  let hasMovements = false;
+
+  sections.forEach(function(section) {
+    if (!Array.isArray(section.items) || section.items.length === 0) {
+      return;
+    }
+
+    hasMovements = true;
+
+    const labelClass =
+      section.type === "promote"
+        ? "movements-label-promote"
+        : "movements-label-relegate";
+
+    const arrowClass =
+      section.type === "promote"
+        ? "movement-arrow-up"
+        : "movement-arrow-down";
+
+    const arrow =
+      section.type === "promote"
+        ? "↑"
+        : "↓";
+
+    const badgeClass =
+      section.type === "promote"
+        ? "movement-driver-badge movement-driver-badge-promote"
+        : "movement-driver-badge movement-driver-badge-relegate";
+
     inner += '<div class="movements-row">';
-    inner += '<div class="movements-label-promote">Promossi</div>';
+
+    inner += '<div class="' + labelClass + '">';
+    inner +=
+      '<span class="movement-arrow ' +
+      arrowClass +
+      '">' +
+      arrow +
+      "</span>";
+    inner += escapeHtml(section.title);
+    inner += "</div>";
+
     inner += '<div class="movements-list">';
 
-    summary.promotions.forEach(function(item) {
-      inner += '<div class="movements-item">' + escapeHtml(item) + "</div>";
+    section.items.forEach(function(item) {
+      inner +=
+        '<div class="' +
+        badgeClass +
+        '">' +
+        '<span class="movement-driver-dot"></span>' +
+        escapeHtml(item.driverName) +
+        "</div>";
     });
 
     inner += "</div>";
     inner += "</div>";
-  }
-
-  if (hasRelegations) {
-    inner += '<div class="movements-row">';
-    inner += '<div class="movements-label-relegate">Retrocessi</div>';
-    inner += '<div class="movements-list">';
-
-    summary.relegations.forEach(function(item) {
-      inner += '<div class="movements-item">' + escapeHtml(item) + "</div>";
-    });
-
-    inner += "</div>";
-    inner += "</div>";
-  }
+  });
 
   if (!hasMovements) {
     inner += '<div class="movements-empty">';
@@ -10537,8 +10673,7 @@ renderRacePngTabs();
   }
 
   inner += '<div class="movements-note">';
-  inner += "Questo TAB visualizza eventuali piloti promossi o retrocessi collegati a questa Lega. ";
-  inner += "Promo: 60% dei punti del blocco delle 3 gare precedenti. Retro: 150% dei punti del blocco delle 3 gare precenti - come da regolamento.";
+  inner += "Movimenti ufficiali collegati a questa lega.";
   inner += "</div>";
 
   inner += "</div>";
@@ -16758,40 +16893,6 @@ const changed = currentValue !== originalValue
   sideLabel={exportTexts.sideLabel}
   subtitle={exportTexts.subtitle}
 />
-
-<div
-  style={{
-    borderRadius: 18,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background:
-      "linear-gradient(180deg, rgba(18,22,31,0.95), rgba(8,10,15,0.95))",
-    boxShadow: "0 10px 40px rgba(0,0,0,0.45)",
-    padding: 14,
-    display: "grid",
-    gap: 10,
-  }}
->
-  <div
-    style={{
-      fontSize: 14,
-      fontWeight: 900,
-      letterSpacing: 0.6,
-      textTransform: "uppercase",
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-    }}
-  >
-    <span>
-      <span style={{ color: "#22c55e" }}>Promozioni</span>{" "}
-      <span style={{ color: "#ef4444" }}>• Retrocessioni</span>
-    </span>
-
-    <span style={{ fontSize: 11, opacity: 0.6 }}>
-      TAP / CLICK
-    </span>
-  </div>
-</div>
 
 <ChampionshipTableBlock
   selectedLeague={selectedLeague}
