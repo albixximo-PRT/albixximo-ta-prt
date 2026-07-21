@@ -6734,27 +6734,57 @@ const presentPilotKeys = new Set(
   rowsWithPole.map((row) => normalizeDriverNameForChampionship(row.pilota))
 )
 
+const roundMovementsForDnp =
+  championshipState.roundMovements?.[currentRace] || {}
+
+const incomingDriversAfterCurrentRace = new Set(
+  CHAMPIONSHIP_LEAGUES.flatMap((league) =>
+    (roundMovementsForDnp[league] || [])
+      .filter(
+        (entry) =>
+          entry.toLeague === selectedLeague &&
+          entry.fromLeague !== selectedLeague
+      )
+      .map((entry) =>
+        normalizeDriverNameForChampionship(entry.driverName)
+      )
+  )
+)
+
   const maxSourcePos = rowsWithPole.reduce(
     (max, row) => Math.max(max, Number(row.sourcePosGara) || 0),
     0
   )
 
   const missingDnpRows: DisplayRow[] = officialLeaguePilots
-    .filter((pilot) => !presentPilotKeys.has(normalizeDriverNameForChampionship(pilot)))
-    .map((pilot, index) => ({
-      posGara: rowsWithPole.length + index + 1,
-      sourcePosGara: maxSourcePos + index + 1,
-      pilota: pilot,
-      auto: "---",
-      tempoTotaleGara: "DNP",
-      distaccoDalPrimo: "DNP",
-      migliorGiroGara: "",
-      tempoQualifica: "",
-      pole: "",
-    }))
+  .filter((pilot) => {
+    const key = normalizeDriverNameForChampionship(pilot)
+
+    return (
+      !presentPilotKeys.has(key) &&
+      !incomingDriversAfterCurrentRace.has(key)
+    )
+  })
+  .map((pilot, index) => ({
+    posGara: rowsWithPole.length + index + 1,
+    sourcePosGara: maxSourcePos + index + 1,
+    pilota: pilot,
+    auto: "---",
+    tempoTotaleGara: "DNP",
+    distaccoDalPrimo: "DNP",
+    migliorGiroGara: "",
+    tempoQualifica: "",
+    pole: "",
+  }))
 
   return [...rowsWithPole, ...missingDnpRows]
-}, [leagueDriverResolution.baseRows, workbenchDriverLeagueMap, selectedLeague])
+}, [
+  leagueDriverResolution.baseRows,
+  workbenchDriverLeagueMap,
+  selectedLeague,
+  championshipState,
+  currentRace,
+])
     const hasManualPilotOverrides = useMemo(() => {
     return Object.keys(manualPilotOverrides).length > 0
   }, [manualPilotOverrides])
