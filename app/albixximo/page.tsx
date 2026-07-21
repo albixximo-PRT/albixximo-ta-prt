@@ -10548,18 +10548,23 @@ renderRacePngTabs();
     relegatedIn: [],
   };
 
-  const sections = [
-    {
-      title: "Promossi in " + league,
-      type: "promote",
-      items: summary.promotedIn,
-    },
-    {
-      title: "Retrocessi da " + league,
-      type: "relegate",
-      items: summary.relegatedFrom,
-    },
-  ];
+  const sections = [];
+
+summary.promotedIn.forEach(function(item) {
+  sections.push({
+    title: "Promossi in " + item.toLeague,
+    type: "promote",
+    items: [item],
+  });
+});
+
+summary.relegatedFrom.forEach(function(item) {
+  sections.push({
+    title: "Retrocessi in " + item.toLeague,
+    type: "relegate",
+    items: [item],
+  });
+});
 
   const promotedFromGroups = {};
 
