@@ -7972,6 +7972,7 @@ const basePoints =
   activeMovement.entry.basePointsOverride != null
     ? activeMovement.entry.basePointsOverride
     : getCorrectTotalUntilRound(baseUntilRace)
+
 const recalculationPointsFull = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
   .filter((raceNumber) => raceNumber > baseUntilRace && raceNumber <= movementRound)
   .reduce((sum, raceNumber) => sum + getRacePoints(raceNumber), 0)
@@ -7980,10 +7981,18 @@ const afterMovementPoints = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
   .filter((raceNumber) => raceNumber > movementRound)
   .reduce((sum, raceNumber) => sum + getRacePoints(raceNumber), 0)
 
+if (movementType === "promote" && movementRound >= 9) {
+  const totalUntilMovement = basePoints + recalculationPointsFull
+
+  driver.totalPoints =
+    Math.ceil(totalUntilMovement * 0.6) +
+    afterMovementPoints
+} else {
   driver.totalPoints =
     basePoints +
     Math.ceil(recalculationPointsFull * multiplier) +
     afterMovementPoints
+}
 
   const movementCell = driver.raceResults[movementRound]
 
