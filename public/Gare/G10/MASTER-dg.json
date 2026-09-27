@@ -1,0 +1,38 @@
+[
+  {
+    "pilot": "bumbumpenny",
+    "code": "P28",
+    "lap": "-",
+    "timing": "--:--",
+    "reason": "Errato o mancato utilizzo degli elementi grafici ufficiali PRT",
+    "sanction": "+5 secondi",
+    "type": "time"
+  },
+  {
+    "pilot": "Rekkia-Speed",
+    "code": "P06",
+    "lap": "01",
+    "timing": "00:56",
+    "reason": "Contatto con perdita di posizioni (9-10)",
+    "sanction": "+25 secondi",
+    "type": "time"
+  },
+  {
+    "pilot": "Rekkia-Speed",
+    "code": "P10",
+    "lap": "01",
+    "timing": "00:56",
+    "reason": "In aggiunta da P01 a P07 non restituendo posizione",
+    "sanction": "+15 secondi",
+    "type": "time"
+  },
+  {
+    "pilot": "The-Knipex",
+    "code": "P02",
+    "lap": "02",
+    "timing": "02:33",
+    "reason": "Contatto con perdita di posizioni (1-2)",
+    "sanction": "+5 secondi",
+    "type": "time"
+  }
+]
