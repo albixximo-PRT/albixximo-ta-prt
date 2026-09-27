@@ -10912,14 +10912,12 @@ setTimeout(() => {
 
 <script>
 (function(){
-  const BASE_VISITS = 378;
-  const NAMESPACE = "prt-s2k26";
-  const COUNTER_NAME = "accessi-portale-prt";
+  const BASE_VISITS = 0;
 
   const boxEl = document.getElementById("prtAccessCounterBox");
   const numberEl = document.getElementById("prtAccessCounterNumber");
 
-  fetch(\`https://api.counterapi.dev/v1/\${NAMESPACE}/\${COUNTER_NAME}/up\`)
+  fetch("/api/portal-counter")
     .then(r => r.json())
     .then(data => {
       const realVisits = Number(data?.count || data?.value || 0);
