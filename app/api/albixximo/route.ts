@@ -364,9 +364,7 @@ const KNOWN_CARS = [
   "RC F GT500 '16",
   "RS 5 Turbo DTM '19",
   "GT-R NISMO GT500 '16",
-    "F3500-B",
-  "Red Bull X2019 Competition",
-  "Red Bull X2019 25th Anniversary",
+  "F3500-B",
 ]
 
 function normalizeCarLoose(s: string) {
@@ -421,9 +419,7 @@ function looksLikeKnownCarToken(s: string) {
   const t = normalizeCarLoose(s)
   if (!t) return false
 
-    return (
-    t.includes("red bull x2019") ||
-    t.includes("x2019") ||
+  return (
     t.includes("f3500-b") ||
         t.includes("ts050") ||
     t.includes("919 hybrid") ||
@@ -638,8 +634,7 @@ function parseQualificaFromColumnText(rawText: string): QualiRow[] {
     if (/^\d+$/.test(t)) return false
     if (/^\+/.test(t)) return false
     if (t.includes(":")) return false
-        if (looksLikeKnownCarToken(t)) return true
-    if (/Red\s*Bull|X2019|Competition|25th\s*Anniversary/i.test(t)) return true
+    if (looksLikeKnownCarToken(t)) return true
     if (/GT3|LMS|RSR/i.test(t)) return true
     if (/'\d{2}/.test(t)) return true
     if (/\(\d{3}\)/.test(t)) return true
@@ -825,150 +820,6 @@ function takeBlock(lines: string[], headerIdx: number, stopRe: RegExp, n: number
   return out
 }
 
-// ============================================================
-// PRT S2K26 - GARA 11 - MONOMARCA RED BULL X2019
-// Parser dedicato: ricostruisce le posizioni perse dall'OCR.
-// ============================================================
-
-function parseGara11Monomarca(
-  rawText: string,
-  tipo: "quali"
-): QualiRow[]
-
-function parseGara11Monomarca(
-  rawText: string,
-  tipo: "race"
-): RaceRow[]
-
-function parseGara11Monomarca(
-  rawText: string,
-  tipo: "quali" | "race"
-): QualiRow[] | RaceRow[] {
-  const lines = rawText
-    .split(/\r?\n/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-
-  const isCar = (s: string) =>
-    /Red\s*Bull\s*X2019/i.test(s)
-
-  const firstCar = lines.findIndex(isCar)
-  if (firstCar < 0) return []
-
-  // Individua il blocco delle posizioni, anche se alcuni numeri mancano.
-  const firstPos = lines.findIndex(
-    (s) => s === "1" || s === "9"
-  )
-  if (firstPos < 0 || firstPos >= firstCar) return []
-
-  const startPos = Number(lines[firstPos])
-
-  // Cerca l'ultima posizione riconosciuta prima dei nomi.
-  let cursor = firstPos
-
-  while (
-    cursor < firstCar &&
-    /^\d{1,2}$/.test(lines[cursor])
-  ) {
-    cursor++
-  }
-
-  // Tutti i piloti sono compresi fra le posizioni e la prima vettura.
-  // Non dipendiamo dal numero di vetture riconosciute.
-  const names = lines
-    .slice(cursor, firstCar)
-    .filter((s) => /[A-Za-z]/.test(s))
-    .map((s) =>
-      normalizePilot(s.replace(/\s+/g, "_"))
-    )
-
-  if (!names.length || names.length > 16) return []
-
-  const positions = names.map(
-    (_, i) => startPos + i
-  )
-
-  const car = "Red Bull X2019"
-
-  if (tipo === "quali") {
-    const idxBest = lines.findIndex((s) =>
-      /MIGLIOR\s+GIRO/i.test(s)
-    )
-
-    if (idxBest < 0) return []
-
-    const idxGap = lines.findIndex((s) =>
-      /^DISTACCO$/i.test(s)
-    )
-
-    const endTimes =
-      idxGap > idxBest ? idxGap : lines.length
-
-    const times = lines
-      .slice(idxBest + 1, endTimes)
-      .filter((s) =>
-        /^\d{1,2}:\d{2}\.\d{3}$/.test(s)
-      )
-      .map(normalizeTimeText)
-
-    if (times.length !== names.length) return []
-
-    return names.map((pilota, i) => ({
-      pos: positions[i],
-      pilota,
-      auto: car,
-      tempo: times[i],
-      distacco: "",
-    }))
-  }
-
-  const idxTempo = lines.findIndex((s) =>
-    /^TEMPO$/i.test(s)
-  )
-
-  const idxBest = lines.findIndex((s) =>
-    /MIGLIOR\s+GIRO/i.test(s)
-  )
-
-  if (idxTempo < 0 || idxBest < 0) return []
-
-  const raceTimes = lines
-  .slice(idxTempo + 1, idxBest)
-  .filter((s) =>
-    /^(?:\d{1,2}:\d{2}\.\d{3}|\+\s*\d+(?::\d{2})?\.\d{3}|\d+\s*giri?)$/i.test(s)
-  )
-  .map(normalizeTimeText)
-
-  const bestLaps = lines
-    .slice(idxBest + 1)
-    .filter((s) =>
-      /^\d{1,2}:\d{2}[.:]\d{3}$/.test(s)
-    )
-    .map((s) =>
-      normalizeTimeText(
-        s.replace(/^(\d{1,2}:\d{2}):(\d{3})$/, "$1.$2")
-      )
-    )
-
-  if (
-    raceTimes.length !== names.length ||
-    bestLaps.length !== names.length
-  ) {
-    return []
-  }
-
-  return names.map((pilota, i) => ({
-    pos: positions[i],
-    pilota,
-    auto: car,
-    tempoTotale:
-      positions[i] === 1 ? raceTimes[i] : "",
-    distacco:
-      positions[i] === 1 ? "" : raceTimes[i],
-    migliorGiro: bestLaps[i],
-  }))
-}
-
 function parseGaraFromColumnText(rawText: string): RaceRow[] {
   const lines = rawText
     .split(/\r?\n/)
@@ -978,7 +829,6 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
   const startCandidates = [1, 9]
   let startIndex = -1
   let startNum = 0
-
   for (const s of startCandidates) {
     const idx = lines.findIndex((l) => l === String(s))
     if (idx !== -1) {
@@ -987,7 +837,6 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
       break
     }
   }
-
   if (startIndex === -1) return []
 
   const positions: number[] = []
@@ -1002,31 +851,23 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
       if (positions.length >= 16) break
       continue
     }
-
     if (/TEMPO|PENALIT|MIGLIOR\s+GIRO/i.test(lines[cursor])) break
     cursor++
     if (positions.length > 0 && cursor - startIndex > 80) break
   }
-
   if (!positions.length) return []
 
   const lastPos = positions[positions.length - 1]
-  const lastPosIdx = lines.findIndex(
-    (l, i) => i >= startIndex && l === String(lastPos)
-  )
-
+  const lastPosIdx = lines.findIndex((l, i) => i >= startIndex && l === String(lastPos))
   cursor = lastPosIdx === -1 ? startIndex : lastPosIdx + 1
 
   const n = positions.length
 
-  const idxTempo = lines.findIndex(
-    (l) => /^TEMPO$/i.test(l) || /TEMPO/i.test(l)
-  )
+  const idxTempo = lines.findIndex((l) => /^TEMPO$/i.test(l) || /TEMPO/i.test(l))
   const idxPen = lines.findIndex((l) => /PENALIT/i.test(l))
   const idxBest = lines.findIndex((l) => /MIGLIOR\s+GIRO/i.test(l))
 
-  const stopAnyHeader =
-    /^(TEMPO|PENALITÀ|PENALITA|MIGLIOR\s+GIRO)$/i
+  const stopAnyHeader = /^(TEMPO|PENALITÀ|PENALITA|MIGLIOR\s+GIRO)$/i
 
   const isName = (s: string) => {
     const t = String(s || "").trim()
@@ -1045,49 +886,28 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
   }
 
   const names: string[] = []
-
   while (cursor < lines.length && names.length < n) {
     const s = lines[cursor]
-
-    if (isName(s)) {
-      names.push(normalizePilot(s.replace(/\s+/g, "_")))
-    }
-
+    if (isName(s)) names.push(normalizePilot(s.replace(/\s+/g, "_")))
     cursor++
-
     if (idxTempo !== -1 && cursor >= idxTempo) break
   }
-
   while (names.length < n) names.push("")
 
-  const carsEnd =
-    idxTempo !== -1
-      ? idxTempo
-      : idxPen !== -1
-        ? idxPen
-        : idxBest !== -1
-          ? idxBest
-          : lines.length
-
+  const carsEnd = idxTempo !== -1 ? idxTempo : idxPen !== -1 ? idxPen : idxBest !== -1 ? idxBest : lines.length
   const carTokens = lines
     .slice(cursor, carsEnd)
     .filter((s) => !stopAnyHeader.test(s))
-    .filter(
-      (s) =>
-        !/Blue Moon|Speedway|Interno|Chiudi|Avanti|Alterna/i.test(s)
-    )
+    .filter((s) => !/Blue Moon|Speedway|Interno|Chiudi|Avanti|Alterna/i.test(s))
 
   const looksLikeModel = (s: string) => {
     const t = normalizeCarLoose(s)
-
     return (
-      t.includes("red bull x2019") ||
-      t.includes("x2019") ||
       t.includes("f3500-b") ||
       /\b(gt3|rsr|lms|evo)\b/i.test(t) ||
       /\br8\b/i.test(t) ||
       /\b911\b/i.test(t) ||
-      t.includes("ts050") ||
+            t.includes("ts050") ||
       t.includes("919 hybrid") ||
       t.includes("gr010") ||
       t.includes("r18") ||
@@ -1108,12 +928,12 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
       t.includes("650s") ||
       t.includes("atenza") ||
       t.includes("s-fr") ||
-      t.includes("racing concept") ||
+t.includes("racing concept") ||
       t.includes("silvia") ||
       t.includes("touring car") ||
       t.includes("tt cup") ||
       t === "4c" ||
-      t.includes("concept-gt") ||
+            t.includes("concept-gt") ||
       t.includes("concept gt") ||
       t.includes("gt500") ||
       t.includes("rc f") ||
@@ -1124,27 +944,21 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
     )
   }
 
-  const hasId = (s: string) =>
+    const hasId = (s: string) =>
     /\(\d{3}\)/.test(s) ||
     /'\d{2}\b/.test(s) ||
     /\b\d{2}\b/.test(s) ||
     /\bGT3\b/i.test(s) ||
     /\bGr\.?4\b/i.test(s) ||
     /\bGr\.?B\b/i.test(s) ||
-    /F3500-B/i.test(s) ||
-    /Rally\s+Car/i.test(s) ||
-    /Red\s*Bull\s*X2019\s*Competition/i.test(s) ||
-    /Red\s*Bull\s*X2019\s*25th\s*Anniversary/i.test(s)
+      /F3500-B/i.test(s) ||
+    /Rally\s+Car/i.test(s)
 
-  const isCompleteCar = (s: string) =>
-    looksLikeModel(s) && hasId(s)
+  const isCompleteCar = (s: string) => looksLikeModel(s) && hasId(s)
 
   const looksLikeCarStart = (tok: string) => {
     const t = normalizeCarLoose(tok)
-
     return (
-      t.includes("red bull x2019") ||
-      t.includes("x2019") ||
       t.includes("f3500-b") ||
       t === "911" ||
       t === "r8" ||
@@ -1171,7 +985,7 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
       t.includes("gt-r") ||
       t.includes("gtr") ||
       t.includes("650s") ||
-      t.includes("nsx concept") ||
+            t.includes("nsx concept") ||
       t.includes("rc f") ||
       t.includes("rs 5") ||
       t.includes("gt-r nismo") ||
@@ -1193,14 +1007,8 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
 
     if (currentParts.length > 0) {
       const curr = cleanCar(currentParts.join(" "))
-      const currHasSomething =
-        looksLikeModel(curr) || hasId(curr)
-
-      if (
-        looksLikeCarStart(tok) &&
-        currHasSomething &&
-        isCompleteCar(curr)
-      ) {
+      const currHasSomething = looksLikeModel(curr) || hasId(curr)
+      if (looksLikeCarStart(tok) && currHasSomething && isCompleteCar(curr)) {
         flush()
       }
     }
@@ -1208,45 +1016,28 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
     currentParts.push(tok)
 
     const now = cleanCar(currentParts.join(" "))
-
     if (isCompleteCar(now)) {
       const next = carTokens[i + 1]?.trim() ?? ""
       const nextIsYear = /^'?\d{2}$/.test(next)
-
       if (nextIsYear) {
         currentParts.push(next)
         i++
       }
-
       flush()
     }
   }
-
   if (currentParts.length) flush()
 
   while (cars.length < n) cars.push("")
   if (cars.length > n) cars.length = n
 
-  const tempoRaw = takeBlock(
-    lines,
-    idxTempo,
-    /^(PENALITÀ|PENALITA|MIGLIOR\s+GIRO)$/i,
-    n
-  )
+  const tempoRaw = takeBlock(lines, idxTempo, /^(PENALITÀ|PENALITA|MIGLIOR\s+GIRO)$/i, n)
 
-  const bestRaw = takeBlock(
-    lines,
-    idxBest,
-    /^(TEMPO|PENALITÀ|PENALITA)$/i,
-    n
-  ).map((s) => {
+  const bestRaw = takeBlock(lines, idxBest, /^(TEMPO|PENALITÀ|PENALITA)$/i, n).map((s) => {
     const m = s.match(/^(\d:\d{2}\.\d{3}|--:--\.\-\-)/)
     return (m?.[1] ?? s).trim()
   })
-
-  const best = bestRaw.map((s) =>
-    s.startsWith("--") ? "" : normalizeTimeText(s)
-  )
+  const best = bestRaw.map((s) => (s.startsWith("--") ? "" : normalizeTimeText(s)))
 
   const out: RaceRow[] = []
 
@@ -1254,36 +1045,24 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
     const pos = positions[i]
     const pilota = names[i] ?? ""
     const auto = normalizeKnownCar(cars[i] ?? "")
-    const tempoCell = normalizeTimeText(
-      (tempoRaw[i] ?? "").trim()
-    )
+    const tempoCell = normalizeTimeText((tempoRaw[i] ?? "").trim())
 
     let tempoTotale = ""
     let distacco = ""
 
     if (pos === 1) {
-      if (/^(?:\d+:)?\d{1,2}:\d{2}\.\d{3}$/.test(tempoCell)) {
-        tempoTotale = tempoCell
-      }
-
+      if (/^(?:\d+:)?\d{1,2}:\d{2}\.\d{3}$/.test(tempoCell)) tempoTotale = tempoCell
       distacco = ""
     } else {
       if (tempoCell.startsWith("+")) {
         distacco = tempoCell
       } else if (/in\s+gara/i.test(tempoCell)) {
         distacco = "BOX"
-      } else {
-        const giroMatch =
-          tempoCell.match(/^(\d+)\s*giro/i) ||
-          tempoCell.match(/^(\d+)\s*giri/i)
-
-        if (giroMatch) {
-          distacco = `${giroMatch[1]}giro`
-        } else if (/non\s*finito/i.test(tempoCell)) {
-          distacco = "DNF"
-        } else {
-          distacco = tempoCell
-        }
+            } else {
+        const giroMatch = tempoCell.match(/^(\d+)\s*giro/i) || tempoCell.match(/^(\d+)\s*giri/i)
+        if (giroMatch) distacco = `${giroMatch[1]}giro`
+        else if (/non\s*finito/i.test(tempoCell)) distacco = "DNF"
+        else distacco = tempoCell
       }
     }
 
@@ -1836,9 +1615,6 @@ export async function POST(req: NextRequest) {
       allTexts.push(text)
 
       const kind = classifyText(text)
-      const isGara11Monomarca =
-  /PRT\s+Season\s*2k26/i.test(text) &&
-  /gara\s*11\b/i.test(text)
       const U = (text || "").toUpperCase()
       const hasRaceHeaders = U.includes("TEMPO") || U.includes("PENALIT") || U.includes("PENALITA")
 
@@ -1847,9 +1623,7 @@ export async function POST(req: NextRequest) {
       if (kind === "quali") {
         qualiTexts.push(text)
 
-        const part = isGara11Monomarca
-  ? parseGara11Monomarca(text, "quali")
-  : parseQualificaFromColumnText(text)
+        const part = parseQualificaFromColumnText(text)
         if (!polePilot) {
           const p1 = part.find((r) => r.pos === 1 && r.pilota)
           if (p1?.pilota) polePilot = p1.pilota
@@ -1875,9 +1649,7 @@ export async function POST(req: NextRequest) {
           const textAlt = ocrAlt.text
           qualiTexts.push(textAlt)
 
-          const partAlt = isGara11Monomarca
-  ? parseGara11Monomarca(textAlt, "quali")
-  : parseQualificaFromColumnText(textAlt)
+          const partAlt = parseQualificaFromColumnText(textAlt)
           if (!polePilot) {
             const p1Alt = partAlt.find((r) => r.pos === 1 && r.pilota)
             if (p1Alt?.pilota) polePilot = p1Alt.pilota
@@ -1910,26 +1682,18 @@ export async function POST(req: NextRequest) {
           debugChunks.push(`FILE #${idx + 1} QUALI TIMES ONLY — ${f.name}\n\n${textTimes}`)
         }
       } else if (kind === "race") {
-        const part = isGara11Monomarca
-  ? parseGara11Monomarca(text, "race")
-  : shortLobbyMode
-    ? parseGaraShortLobby(text)
-    : parseGaraFromColumnText(text)
+        const part = shortLobbyMode
   ? parseGaraShortLobby(text)
   : parseGaraFromColumnText(text)
         for (const r of part) {
           raceRowsMerged.set(r.pos, { ...r, auto: normalizeKnownCar(r.auto) })
         }
       } else {
-        const q = isGara11Monomarca
-  ? parseGara11Monomarca(text, "quali")
-  : parseQualificaFromColumnText(text)
+        const q = parseQualificaFromColumnText(text)
         const g = hasRaceHeaders
-  ? isGara11Monomarca
-    ? parseGara11Monomarca(text, "race")
-    : shortLobbyMode
-      ? parseGaraShortLobby(text)
-      : parseGaraFromColumnText(text)
+  ? shortLobbyMode
+    ? parseGaraShortLobby(text)
+    : parseGaraFromColumnText(text)
   : []
 
         if (!hasRaceHeaders) {
@@ -2026,9 +1790,7 @@ export async function POST(req: NextRequest) {
             const textAlt = ocrAlt.text
             qualiTexts.push(textAlt)
 
-            const partAlt = isGara11Monomarca
-  ? parseGara11Monomarca(textAlt, "quali")
-  : parseQualificaFromColumnText(textAlt)
+            const partAlt = parseQualificaFromColumnText(textAlt)
             if (!polePilot) {
               const p1Alt = partAlt.find((r) => r.pos === 1 && r.pilota)
               if (p1Alt?.pilota) polePilot = p1Alt.pilota
