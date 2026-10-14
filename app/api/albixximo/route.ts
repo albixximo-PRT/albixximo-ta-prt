@@ -715,7 +715,14 @@ const positions = isGara11X2019
 
   let distacchi: string[] = Array(count).fill("")
   const hasLeaderMarker = gapsRaw.some((g) => g.startsWith("--"))
-  if (hasLeaderMarker) {
+  if (
+  hasLeaderMarker ||
+  (
+    isGara11X2019 &&
+    posBlock.startNum === 1 &&
+    gapsRaw.length === count - 1
+  )
+) {
     const onlyPlus = gapsRaw.filter((g) => g.startsWith("+")).slice(0, Math.max(0, count - 1))
     distacchi = [""].concat(onlyPlus)
     while (distacchi.length < count) distacchi.push("")
@@ -1811,6 +1818,30 @@ export async function POST(req: NextRequest) {
             for (const r of partAlt) {
               mergeQualiRowSafe(qualiRowsMerged, r)
             }
+
+            // PRT Gara 11 X2019: recupero tempi completi
+// dalla lettura alternativa delle posizioni 9-11.
+if (
+  /\bgara\s*11\b/i.test(textAlt) &&
+  /Red Bull X2019 Competition/i.test(textAlt) &&
+  partAlt.length === 3 &&
+  partAlt.every((r) =>
+    r.pos >= 9 &&
+    r.pos <= 11 &&
+    /^\d{1,2}:\d{2}\.\d{3}$/.test(r.tempo)
+  )
+) {
+  for (const r of partAlt) {
+    const existing = qualiRowsMerged.get(r.pos)
+
+    if (existing) {
+      qualiRowsMerged.set(r.pos, {
+        ...existing,
+        tempo: r.tempo,
+      })
+    }
+  }
+}
 
             debugChunks.push(`FILE #${idx + 1} QUALI ALT UNKNOWN — ${f.name}\n\n${textAlt}`)
           }
