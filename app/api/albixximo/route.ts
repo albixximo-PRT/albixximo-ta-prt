@@ -825,6 +825,150 @@ function takeBlock(lines: string[], headerIdx: number, stopRe: RegExp, n: number
   return out
 }
 
+// ============================================================
+// PRT S2K26 - GARA 11 - MONOMARCA RED BULL X2019
+// Parser dedicato: ricostruisce le posizioni perse dall'OCR.
+// ============================================================
+
+function parseGara11Monomarca(
+  rawText: string,
+  tipo: "quali"
+): QualiRow[]
+
+function parseGara11Monomarca(
+  rawText: string,
+  tipo: "race"
+): RaceRow[]
+
+function parseGara11Monomarca(
+  rawText: string,
+  tipo: "quali" | "race"
+): QualiRow[] | RaceRow[] {
+  const lines = rawText
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+
+  const isCar = (s: string) =>
+    /Red\s*Bull\s*X2019/i.test(s)
+
+  const firstCar = lines.findIndex(isCar)
+  if (firstCar < 0) return []
+
+  // Individua il blocco delle posizioni, anche se alcuni numeri mancano.
+  const firstPos = lines.findIndex(
+    (s) => s === "1" || s === "9"
+  )
+  if (firstPos < 0 || firstPos >= firstCar) return []
+
+  const startPos = Number(lines[firstPos])
+
+  // Cerca l'ultima posizione riconosciuta prima dei nomi.
+  let cursor = firstPos
+
+  while (
+    cursor < firstCar &&
+    /^\d{1,2}$/.test(lines[cursor])
+  ) {
+    cursor++
+  }
+
+  // Tutti i piloti sono compresi fra le posizioni e la prima vettura.
+  // Non dipendiamo dal numero di vetture riconosciute.
+  const names = lines
+    .slice(cursor, firstCar)
+    .filter((s) => /[A-Za-z]/.test(s))
+    .map((s) =>
+      normalizePilot(s.replace(/\s+/g, "_"))
+    )
+
+  if (!names.length || names.length > 16) return []
+
+  const positions = names.map(
+    (_, i) => startPos + i
+  )
+
+  const car = "Red Bull X2019"
+
+  if (tipo === "quali") {
+    const idxBest = lines.findIndex((s) =>
+      /MIGLIOR\s+GIRO/i.test(s)
+    )
+
+    if (idxBest < 0) return []
+
+    const idxGap = lines.findIndex((s) =>
+      /^DISTACCO$/i.test(s)
+    )
+
+    const endTimes =
+      idxGap > idxBest ? idxGap : lines.length
+
+    const times = lines
+      .slice(idxBest + 1, endTimes)
+      .filter((s) =>
+        /^\d{1,2}:\d{2}\.\d{3}$/.test(s)
+      )
+      .map(normalizeTimeText)
+
+    if (times.length !== names.length) return []
+
+    return names.map((pilota, i) => ({
+      pos: positions[i],
+      pilota,
+      auto: car,
+      tempo: times[i],
+      distacco: "",
+    }))
+  }
+
+  const idxTempo = lines.findIndex((s) =>
+    /^TEMPO$/i.test(s)
+  )
+
+  const idxBest = lines.findIndex((s) =>
+    /MIGLIOR\s+GIRO/i.test(s)
+  )
+
+  if (idxTempo < 0 || idxBest < 0) return []
+
+  const raceTimes = lines
+  .slice(idxTempo + 1, idxBest)
+  .filter((s) =>
+    /^(?:\d{1,2}:\d{2}\.\d{3}|\+\s*\d+(?::\d{2})?\.\d{3}|\d+\s*giri?)$/i.test(s)
+  )
+  .map(normalizeTimeText)
+
+  const bestLaps = lines
+    .slice(idxBest + 1)
+    .filter((s) =>
+      /^\d{1,2}:\d{2}[.:]\d{3}$/.test(s)
+    )
+    .map((s) =>
+      normalizeTimeText(
+        s.replace(/^(\d{1,2}:\d{2}):(\d{3})$/, "$1.$2")
+      )
+    )
+
+  if (
+    raceTimes.length !== names.length ||
+    bestLaps.length !== names.length
+  ) {
+    return []
+  }
+
+  return names.map((pilota, i) => ({
+    pos: positions[i],
+    pilota,
+    auto: car,
+    tempoTotale:
+      positions[i] === 1 ? raceTimes[i] : "",
+    distacco:
+      positions[i] === 1 ? "" : raceTimes[i],
+    migliorGiro: bestLaps[i],
+  }))
+}
+
 function parseGaraFromColumnText(rawText: string): RaceRow[] {
   const lines = rawText
     .split(/\r?\n/)
@@ -1692,6 +1836,9 @@ export async function POST(req: NextRequest) {
       allTexts.push(text)
 
       const kind = classifyText(text)
+      const isGara11Monomarca =
+  /PRT\s+Season\s*2k26/i.test(text) &&
+  /gara\s*11\b/i.test(text)
       const U = (text || "").toUpperCase()
       const hasRaceHeaders = U.includes("TEMPO") || U.includes("PENALIT") || U.includes("PENALITA")
 
@@ -1700,7 +1847,9 @@ export async function POST(req: NextRequest) {
       if (kind === "quali") {
         qualiTexts.push(text)
 
-        const part = parseQualificaFromColumnText(text)
+        const part = isGara11Monomarca
+  ? parseGara11Monomarca(text, "quali")
+  : parseQualificaFromColumnText(text)
         if (!polePilot) {
           const p1 = part.find((r) => r.pos === 1 && r.pilota)
           if (p1?.pilota) polePilot = p1.pilota
@@ -1726,7 +1875,9 @@ export async function POST(req: NextRequest) {
           const textAlt = ocrAlt.text
           qualiTexts.push(textAlt)
 
-          const partAlt = parseQualificaFromColumnText(textAlt)
+          const partAlt = isGara11Monomarca
+  ? parseGara11Monomarca(textAlt, "quali")
+  : parseQualificaFromColumnText(textAlt)
           if (!polePilot) {
             const p1Alt = partAlt.find((r) => r.pos === 1 && r.pilota)
             if (p1Alt?.pilota) polePilot = p1Alt.pilota
@@ -1759,18 +1910,26 @@ export async function POST(req: NextRequest) {
           debugChunks.push(`FILE #${idx + 1} QUALI TIMES ONLY — ${f.name}\n\n${textTimes}`)
         }
       } else if (kind === "race") {
-        const part = shortLobbyMode
+        const part = isGara11Monomarca
+  ? parseGara11Monomarca(text, "race")
+  : shortLobbyMode
+    ? parseGaraShortLobby(text)
+    : parseGaraFromColumnText(text)
   ? parseGaraShortLobby(text)
   : parseGaraFromColumnText(text)
         for (const r of part) {
           raceRowsMerged.set(r.pos, { ...r, auto: normalizeKnownCar(r.auto) })
         }
       } else {
-        const q = parseQualificaFromColumnText(text)
+        const q = isGara11Monomarca
+  ? parseGara11Monomarca(text, "quali")
+  : parseQualificaFromColumnText(text)
         const g = hasRaceHeaders
-  ? shortLobbyMode
-    ? parseGaraShortLobby(text)
-    : parseGaraFromColumnText(text)
+  ? isGara11Monomarca
+    ? parseGara11Monomarca(text, "race")
+    : shortLobbyMode
+      ? parseGaraShortLobby(text)
+      : parseGaraFromColumnText(text)
   : []
 
         if (!hasRaceHeaders) {
@@ -1867,7 +2026,9 @@ export async function POST(req: NextRequest) {
             const textAlt = ocrAlt.text
             qualiTexts.push(textAlt)
 
-            const partAlt = parseQualificaFromColumnText(textAlt)
+            const partAlt = isGara11Monomarca
+  ? parseGara11Monomarca(textAlt, "quali")
+  : parseQualificaFromColumnText(textAlt)
             if (!polePilot) {
               const p1Alt = partAlt.find((r) => r.pos === 1 && r.pilota)
               if (p1Alt?.pilota) polePilot = p1Alt.pilota
