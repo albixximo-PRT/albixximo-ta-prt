@@ -364,7 +364,8 @@ const KNOWN_CARS = [
   "RC F GT500 '16",
   "RS 5 Turbo DTM '19",
   "GT-R NISMO GT500 '16",
-  "F3500-B",
+    "F3500-B",
+  "Red Bull X2019 Competition",
 ]
 
 function normalizeCarLoose(s: string) {
@@ -420,6 +421,7 @@ function looksLikeKnownCarToken(s: string) {
   if (!t) return false
 
   return (
+    t.includes("red bull x2019") ||
     t.includes("f3500-b") ||
         t.includes("ts050") ||
     t.includes("919 hybrid") ||
@@ -587,6 +589,40 @@ function parseQualificaFromColumnText(rawText: string): QualiRow[] {
 
   const findPosBlock = () => {
     const candidates = [1, 9]
+    // PRT Gara 11 — Red Bull X2019
+// Recupera il blocco posizioni anche se l'OCR salta qualche numero.
+if (
+  /\bgara\s*11\b/i.test(rawText) &&
+  /Red Bull X2019 Competition/i.test(rawText)
+) {
+  for (const startNum of candidates) {
+    const start = lines.findIndex((line) => line === String(startNum))
+    if (start === -1) continue
+
+    let end = start
+    let lastPos = startNum - 1
+
+    while (end < lines.length) {
+      const value = Number(lines[end])
+
+      if (
+        !/^\d+$/.test(lines[end]) ||
+        value < startNum ||
+        value > 16 ||
+        value <= lastPos
+      ) break
+
+      lastPos = value
+      end++
+    }
+
+    const count = lastPos - startNum + 1
+
+    if (count >= 2) {
+      return { start, end, startNum, count }
+    }
+  }
+}
     for (const startNum of candidates) {
       for (let i = 0; i < lines.length; i++) {
         if (lines[i] !== String(startNum)) continue
@@ -602,7 +638,14 @@ function parseQualificaFromColumnText(rawText: string): QualiRow[] {
   if (!posBlock) return []
 
   const count = posBlock.count
-  const positions = lines.slice(posBlock.start, posBlock.end).map((x) => Number(x))
+
+const isGara11X2019 =
+  /\bgara\s*11\b/i.test(rawText) &&
+  /Red Bull X2019 Competition/i.test(rawText)
+
+const positions = isGara11X2019
+  ? Array.from({ length: count }, (_, i) => posBlock.startNum + i)
+  : lines.slice(posBlock.start, posBlock.end).map((x) => Number(x))
   let cursor = posBlock.end
 
   const isName = (s: string) => {
@@ -839,20 +882,52 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
   }
   if (startIndex === -1) return []
 
-  const positions: number[] = []
-  let cursor = startIndex
-  let expected = startNum
+  const isGara11X2019 =
+  /\bgara\s*11\b/i.test(rawText) &&
+  /Red Bull X2019 Competition/i.test(rawText)
+
+const positions: number[] = []
+let cursor = startIndex
+let expected = startNum
 
   while (cursor < lines.length) {
-    if (lines[cursor] === String(expected)) {
-      positions.push(expected)
-      expected++
-      cursor++
+    if (
+  lines[cursor] === String(expected) ||
+  (
+    isGara11X2019 &&
+    /^\d+$/.test(lines[cursor]) &&
+    Number(lines[cursor]) > expected &&
+    Number(lines[cursor]) <= (startNum === 1 ? 8 : 16)
+  )
+) {
+      const detectedPos = Number(lines[cursor])
+
+if (isGara11X2019 && detectedPos > expected) {
+  while (expected < detectedPos) {
+    positions.push(expected)
+    expected++
+  }
+}
+
+positions.push(expected)
+expected++
+cursor++
       if (positions.length >= 16) break
       continue
     }
     if (/TEMPO|PENALIT|MIGLIOR\s+GIRO/i.test(lines[cursor])) break
-    cursor++
+
+// Gara 11 X2019: terminato il blocco numerico,
+// non cercare altre posizioni tra i nomi dei piloti.
+if (
+  isGara11X2019 &&
+  positions.length > 0 &&
+  /[A-Za-z_]/.test(lines[cursor])
+) {
+  break
+}
+
+cursor++
     if (positions.length > 0 && cursor - startIndex > 80) break
   }
   if (!positions.length) return []
@@ -951,6 +1026,7 @@ t.includes("racing concept") ||
     /\bGT3\b/i.test(s) ||
     /\bGr\.?4\b/i.test(s) ||
     /\bGr\.?B\b/i.test(s) ||
+    /Red Bull X2019/i.test(s) ||
       /F3500-B/i.test(s) ||
     /Rally\s+Car/i.test(s)
 
@@ -959,7 +1035,8 @@ t.includes("racing concept") ||
   const looksLikeCarStart = (tok: string) => {
     const t = normalizeCarLoose(tok)
     return (
-      t.includes("f3500-b") ||
+  t.includes("red bull x2019") ||
+  t.includes("f3500-b") ||
       t === "911" ||
       t === "r8" ||
       /^911\b/.test(t) ||
