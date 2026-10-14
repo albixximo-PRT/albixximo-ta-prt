@@ -3595,6 +3595,14 @@ export default function Page() {
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState("")
+  // ============================================================
+// PRT - DEBUG OCR RAW
+// Memorizza il testo originale restituito dal backend.
+// Non interviene sul parser o sulle classifiche.
+// ============================================================
+
+const [ocrDebugRaw, setOcrDebugRaw] = useState("")
+const [ocrDebugStats, setOcrDebugStats] = useState("")
   const [showTable, setShowTable] = useState(true)
   const [showReq, setShowReq] = useState(false)
   const [prtMode, setPrtMode] = useState(true)
