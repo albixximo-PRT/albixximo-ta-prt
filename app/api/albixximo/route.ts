@@ -365,6 +365,7 @@ const KNOWN_CARS = [
   "RS 5 Turbo DTM '19",
   "GT-R NISMO GT500 '16",
     "F3500-B",
+    "Red Bull X2019 25th Anniversary",
   "Red Bull X2019 Competition",
 ]
 
@@ -589,6 +590,60 @@ function parseQualificaFromColumnText(rawText: string): QualiRow[] {
 
   const findPosBlock = () => {
     const candidates = [1, 9]
+    // PRT Gara 11 ELITE — screenshot con il solo 9° qualificato
+if (
+  /\bgara\s*11\b/i.test(rawText) &&
+  /\bLega\s+Elite\b/i.test(rawText) &&
+  /Red Bull X2019/i.test(rawText)
+) {
+  const pos9 = lines.findIndex(
+    (line, i) =>
+      line === "9" &&
+      lines[i + 1] === "N_spec2"
+  )
+
+  if (pos9 !== -1) {
+    return {
+      start: pos9,
+      end: pos9 + 1,
+      startNum: 9,
+      count: 1,
+    }
+  }
+}
+    // PRT Gara 11 — ELITE
+// Recupera le posizioni 1–8 quando l'OCR perde la prima posizione.
+if (
+  /\bgara\s*11\b/i.test(rawText) &&
+  /\bLega\s+Elite\b/i.test(rawText) &&
+  /Red Bull X2019/i.test(rawText)
+) {
+  const firstTwo = lines.findIndex(
+    (line, i) =>
+      line === "2" &&
+      lines[i + 1] === "4" &&
+      lines[i + 2] === "5"
+  )
+
+  if (firstTwo !== -1) {
+    let end = firstTwo
+
+    while (
+      end < lines.length &&
+      /^\d+$/.test(lines[end]) &&
+      Number(lines[end]) <= 8
+    ) {
+      end++
+    }
+
+    return {
+      start: firstTwo,
+      end,
+      startNum: 1,
+      count: 8,
+    }
+  }
+}
     // PRT Gara 11 — Red Bull X2019
 // Recupera il blocco posizioni anche se l'OCR salta qualche numero.
 if (
@@ -877,6 +932,20 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
     .filter(Boolean)
 
   const startCandidates = [1, 9]
+  // PRT Gara 11 ELITE — posizione iniziale omessa dall'OCR
+const isGara11Elite =
+  /\bgara\s*11\b/i.test(rawText) &&
+  /\bLega\s+Elite\b/i.test(rawText) &&
+  /Red Bull X2019/i.test(rawText)
+
+const eliteMissingFirstPos =
+  isGara11Elite &&
+  lines.some(
+    (line, i) =>
+      line === "2" &&
+      lines[i + 1] === "5" &&
+      lines[i + 2] === "6"
+  )
   let startIndex = -1
   let startNum = 0
   for (const s of startCandidates) {
@@ -887,7 +956,14 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
       break
     }
   }
-  if (startIndex === -1) return []
+  // PRT Gara 11 ELITE: l'OCR ha omesso la posizione 1.
+// Il primo screenshot contiene comunque gli 8 piloti.
+if (eliteMissingFirstPos) {
+  startIndex = lines.findIndex((line) => line === "2")
+  startNum = 1
+}
+
+if (startIndex === -1) return []
 
   const isGara11X2019 =
   /\bgara\s*11\b/i.test(rawText) &&
@@ -907,7 +983,18 @@ let expected = startNum
     Number(lines[cursor]) <= (startNum === 1 ? 8 : 16)
   )
 ) {
-      const detectedPos = Number(lines[cursor])
+  // PRT Gara 11 ELITE: ricostruzione della posizione 1
+// quando il primo numero OCR è 2.
+if (
+  eliteMissingFirstPos &&
+  positions.length === 0 &&
+  expected === 1 &&
+  lines[cursor] === "2"
+) {
+  positions.push(1)
+  expected = 2
+}    
+  const detectedPos = Number(lines[cursor])
 
 if (isGara11X2019 && detectedPos > expected) {
   while (expected < detectedPos) {
@@ -937,11 +1024,30 @@ if (
 cursor++
     if (positions.length > 0 && cursor - startIndex > 80) break
   }
+  // PRT Gara 11 ELITE: completa le otto posizioni
+// del primo screenshot quando l'OCR omette gli ultimi numeri.
+if (
+  eliteMissingFirstPos &&
+  startNum === 1 &&
+  positions.length > 0 &&
+  positions.length < 8
+) {
+  while (positions.length < 8) {
+    positions.push(positions.length + 1)
+  }
+}
   if (!positions.length) return []
 
   const lastPos = positions[positions.length - 1]
-  const lastPosIdx = lines.findIndex((l, i) => i >= startIndex && l === String(lastPos))
+const lastPosIdx = lines.findIndex(
+  (l, i) => i >= startIndex && l === String(lastPos)
+)
+
+if (!eliteMissingFirstPos) {
   cursor = lastPosIdx === -1 ? startIndex : lastPosIdx + 1
+}
+// Nel caso ELITE il ciclo ha già individuato
+// il punto in cui iniziano i nomi dei piloti.
 
   const n = positions.length
 
@@ -985,6 +1091,7 @@ cursor++
   const looksLikeModel = (s: string) => {
     const t = normalizeCarLoose(s)
     return (
+      t.includes("red bull x2019") ||
       t.includes("f3500-b") ||
       /\b(gt3|rsr|lms|evo)\b/i.test(t) ||
       /\br8\b/i.test(t) ||
@@ -1121,7 +1228,16 @@ t.includes("racing concept") ||
     const m = s.match(/^(\d:\d{2}\.\d{3}|--:--\.\-\-)/)
     return (m?.[1] ?? s).trim()
   })
-  const best = bestRaw.map((s) => (s.startsWith("--") ? "" : normalizeTimeText(s)))
+  const best = bestRaw.map((s) => {
+  if (s.startsWith("--")) return ""
+
+  const corrected =
+    isGara11Elite
+      ? s.replace(/^(\d{1,2}:\d{2}):(\d{3})$/, "$1.$2")
+      : s
+
+  return normalizeTimeText(corrected)
+})
 
   const out: RaceRow[] = []
 
