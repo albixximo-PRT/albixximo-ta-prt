@@ -629,8 +629,53 @@ function parseQualificaFromColumnText(rawText: string): QualiRow[] {
     return null
   }
 
-  const posBlock = findPosBlock()
-  if (!posBlock) return []
+  let posBlock = findPosBlock()
+
+// FIX MIRATO — GARA 11 GT
+// Recupera le prime 8 posizioni quando l'OCR
+// omette alcuni numeri oppure legge il 3 come "З".
+if (
+  /\bseason\s*11\b/i.test(rawText) &&
+  /\blega\s*GT\b/i.test(rawText)
+) {
+  const firstNumericIndex = lines.findIndex(
+    (line) => /^[1-8]$/.test(line)
+  )
+
+  if (firstNumericIndex !== -1) {
+    const firstCarIndex = lines.findIndex(
+      (line, index) =>
+        index > firstNumericIndex &&
+        looksLikeKnownCarToken(line)
+    )
+
+    if (firstCarIndex !== -1) {
+      const namesStart = firstCarIndex - 8
+
+      if (namesStart > firstNumericIndex) {
+        const candidateNames = lines.slice(namesStart, firstCarIndex)
+
+        const validNames = candidateNames.every(
+          (line) =>
+            /[A-Za-z]/.test(line) &&
+            !looksLikeKnownCarToken(line) &&
+            !line.includes(":")
+        )
+
+        if (validNames) {
+          posBlock = {
+            start: firstNumericIndex,
+            end: namesStart,
+            startNum: 1,
+            count: 8,
+          }
+        }
+      }
+    }
+  }
+}
+
+if (!posBlock) return []
 
   const count = posBlock.count
 
