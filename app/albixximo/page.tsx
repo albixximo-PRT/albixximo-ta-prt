@@ -11526,8 +11526,48 @@ function removePilotFromLeagueDrawer(
         normalizeDriverNameForChampionship(pilot) !== target
     )
 
-    return next
+        return next
   })
+
+  // Ritiro MaxLukex: solo Gara 11 PLATINUM.
+  // Le gare precedenti rimangono inalterate.
+  if (
+    currentRace === 11 &&
+    league === "PLATINUM" &&
+    target === normalizeDriverNameForChampionship("MaxLukex")
+  ) {
+    setChampionshipState((prev) => {
+      const snapshot = prev.races[11]?.PLATINUM
+      if (!snapshot) return prev
+
+      const keepPilot = (name: string) =>
+        normalizeDriverNameForChampionship(name) !== target
+
+      const filteredRows = snapshot.rows.filter((row) =>
+        keepPilot(row.pilota)
+      )
+
+      const filteredFinalRows = snapshot.finalRows.filter((row) =>
+        keepPilot(row.pilota)
+      )
+
+      return {
+        ...prev,
+        races: {
+          ...prev.races,
+          11: {
+            ...prev.races[11],
+            PLATINUM: {
+              ...snapshot,
+              rows: filteredRows,
+              finalRows: filteredFinalRows,
+              csv: buildCsvFromRows(filteredFinalRows, snapshot.unionMeta),
+            },
+          },
+        },
+      }
+    })
+  }
 }
 
 function removeDsqDriversFromDrawer() {
