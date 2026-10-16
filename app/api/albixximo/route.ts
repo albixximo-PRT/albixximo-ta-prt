@@ -963,6 +963,29 @@ if (eliteMissingFirstPos) {
   startNum = 1
 }
 
+if (startIndex === -1) {
+  const idxTempo = lines.findIndex((line) => /^TEMPO$/i.test(line))
+
+  if (idxTempo !== -1) {
+    const idxTwo = lines.findIndex(
+      (line, i) => i < idxTempo && line === "2"
+    )
+
+    if (idxTwo !== -1) {
+      const beforeTempo = lines.slice(idxTwo + 1, idxTempo)
+
+      const carCount = beforeTempo.filter((line) =>
+        looksLikeKnownCarToken(line)
+      ).length
+
+      if (carCount >= 2 && carCount <= 8) {
+        startIndex = idxTwo
+        startNum = 1
+      }
+    }
+  }
+}
+
 if (startIndex === -1) return []
 
   const isGara11X2019 =
@@ -994,7 +1017,17 @@ if (
   positions.push(1)
   expected = 2
 }    
-  const detectedPos = Number(lines[cursor])
+if (
+  isGara11X2019 &&
+  !eliteMissingFirstPos &&
+  positions.length === 0 &&
+  expected === 1 &&
+  lines[cursor] === "2"
+) {
+  positions.push(1)
+  expected = 2
+}  
+const detectedPos = Number(lines[cursor])
 
 if (isGara11X2019 && detectedPos > expected) {
   while (expected < detectedPos) {
@@ -1044,12 +1077,15 @@ const lastPosIdx = lines.findIndex(
 )
 
 if (!eliteMissingFirstPos) {
-  cursor = lastPosIdx === -1 ? startIndex : lastPosIdx + 1
+  if (lastPosIdx !== -1) {
+    cursor = lastPosIdx + 1
+  }
+  // Se l'ultima posizione è stata ricostruita ma
+  // non compare nel RAW, conserviamo il cursore
+  // già avanzato fino all'inizio dei nomi.
 }
-// Nel caso ELITE il ciclo ha già individuato
-// il punto in cui iniziano i nomi dei piloti.
 
-  const n = positions.length
+const n = positions.length
 
   const idxTempo = lines.findIndex((l) => /^TEMPO$/i.test(l) || /TEMPO/i.test(l))
   const idxPen = lines.findIndex((l) => /PENALIT/i.test(l))
