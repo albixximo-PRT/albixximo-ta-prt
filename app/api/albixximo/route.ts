@@ -325,6 +325,8 @@ function csvEscape(v: any) {
 /* -------------------- Known cars -------------------- */
 
 const KNOWN_CARS = [
+    "Red Bull X2019 Competition",
+  "Red Bull X2019 25th Anniversary",
   "Cayman GT4 Clubsport '16",
   "Mégane Trophy '11",
   "Swift Sport Gr.4",
@@ -364,9 +366,7 @@ const KNOWN_CARS = [
   "RC F GT500 '16",
   "RS 5 Turbo DTM '19",
   "GT-R NISMO GT500 '16",
-    "F3500-B",
-    "Red Bull X2019 25th Anniversary",
-  "Red Bull X2019 Competition",
+  "F3500-B",
 ]
 
 function normalizeCarLoose(s: string) {
@@ -422,7 +422,7 @@ function looksLikeKnownCarToken(s: string) {
   if (!t) return false
 
   return (
-    t.includes("red bull x2019") ||
+        t.includes("red bull x2019") ||
     t.includes("f3500-b") ||
         t.includes("ts050") ||
     t.includes("919 hybrid") ||
@@ -590,94 +590,6 @@ function parseQualificaFromColumnText(rawText: string): QualiRow[] {
 
   const findPosBlock = () => {
     const candidates = [1, 9]
-    // PRT Gara 11 ELITE — screenshot con il solo 9° qualificato
-if (
-  /\bgara\s*11\b/i.test(rawText) &&
-  /\bLega\s+Elite\b/i.test(rawText) &&
-  /Red Bull X2019/i.test(rawText)
-) {
-  const pos9 = lines.findIndex(
-    (line, i) =>
-      line === "9" &&
-      lines[i + 1] === "N_spec2"
-  )
-
-  if (pos9 !== -1) {
-    return {
-      start: pos9,
-      end: pos9 + 1,
-      startNum: 9,
-      count: 1,
-    }
-  }
-}
-    // PRT Gara 11 — ELITE
-// Recupera le posizioni 1–8 quando l'OCR perde la prima posizione.
-if (
-  /\bgara\s*11\b/i.test(rawText) &&
-  /\bLega\s+Elite\b/i.test(rawText) &&
-  /Red Bull X2019/i.test(rawText)
-) {
-  const firstTwo = lines.findIndex(
-    (line, i) =>
-      line === "2" &&
-      lines[i + 1] === "4" &&
-      lines[i + 2] === "5"
-  )
-
-  if (firstTwo !== -1) {
-    let end = firstTwo
-
-    while (
-      end < lines.length &&
-      /^\d+$/.test(lines[end]) &&
-      Number(lines[end]) <= 8
-    ) {
-      end++
-    }
-
-    return {
-      start: firstTwo,
-      end,
-      startNum: 1,
-      count: 8,
-    }
-  }
-}
-    // PRT Gara 11 — Red Bull X2019
-// Recupera il blocco posizioni anche se l'OCR salta qualche numero.
-if (
-  /\bgara\s*11\b/i.test(rawText) &&
-  /Red Bull X2019 Competition/i.test(rawText)
-) {
-  for (const startNum of candidates) {
-    const start = lines.findIndex((line) => line === String(startNum))
-    if (start === -1) continue
-
-    let end = start
-    let lastPos = startNum - 1
-
-    while (end < lines.length) {
-      const value = Number(lines[end])
-
-      if (
-        !/^\d+$/.test(lines[end]) ||
-        value < startNum ||
-        value > 16 ||
-        value <= lastPos
-      ) break
-
-      lastPos = value
-      end++
-    }
-
-    const count = lastPos - startNum + 1
-
-    if (count >= 2) {
-      return { start, end, startNum, count }
-    }
-  }
-}
     for (const startNum of candidates) {
       for (let i = 0; i < lines.length; i++) {
         if (lines[i] !== String(startNum)) continue
@@ -693,14 +605,7 @@ if (
   if (!posBlock) return []
 
   const count = posBlock.count
-
-const isGara11X2019 =
-  /\bgara\s*11\b/i.test(rawText) &&
-  /Red Bull X2019 Competition/i.test(rawText)
-
-const positions = isGara11X2019
-  ? Array.from({ length: count }, (_, i) => posBlock.startNum + i)
-  : lines.slice(posBlock.start, posBlock.end).map((x) => Number(x))
+  const positions = lines.slice(posBlock.start, posBlock.end).map((x) => Number(x))
   let cursor = posBlock.end
 
   const isName = (s: string) => {
@@ -770,14 +675,7 @@ const positions = isGara11X2019
 
   let distacchi: string[] = Array(count).fill("")
   const hasLeaderMarker = gapsRaw.some((g) => g.startsWith("--"))
-  if (
-  hasLeaderMarker ||
-  (
-    isGara11X2019 &&
-    posBlock.startNum === 1 &&
-    gapsRaw.length === count - 1
-  )
-) {
+  if (hasLeaderMarker) {
     const onlyPlus = gapsRaw.filter((g) => g.startsWith("+")).slice(0, Math.max(0, count - 1))
     distacchi = [""].concat(onlyPlus)
     while (distacchi.length < count) distacchi.push("")
@@ -931,23 +829,10 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
     .map((l) => l.trim())
     .filter(Boolean)
 
-  const startCandidates = [1, 9]
-  // PRT Gara 11 ELITE — posizione iniziale omessa dall'OCR
-const isGara11Elite =
-  /\bgara\s*11\b/i.test(rawText) &&
-  /\bLega\s+Elite\b/i.test(rawText) &&
-  /Red Bull X2019/i.test(rawText)
-
-const eliteMissingFirstPos =
-  isGara11Elite &&
-  lines.some(
-    (line, i) =>
-      line === "2" &&
-      lines[i + 1] === "5" &&
-      lines[i + 2] === "6"
-  )
+    const startCandidates = [1, 9]
   let startIndex = -1
   let startNum = 0
+
   for (const s of startCandidates) {
     const idx = lines.findIndex((l) => l === String(s))
     if (idx !== -1) {
@@ -956,136 +841,80 @@ const eliteMissingFirstPos =
       break
     }
   }
-  // PRT Gara 11 ELITE: l'OCR ha omesso la posizione 1.
-// Il primo screenshot contiene comunque gli 8 piloti.
-if (eliteMissingFirstPos) {
-  startIndex = lines.findIndex((line) => line === "2")
-  startNum = 1
-}
 
-if (startIndex === -1) {
-  const idxTempo = lines.findIndex((line) => /^TEMPO$/i.test(line))
-
-  if (idxTempo !== -1) {
-    const idxTwo = lines.findIndex(
-      (line, i) => i < idxTempo && line === "2"
+  // Recupero generale quando OCR non riconosce
+  // la prima posizione del blocco.
+  if (startIndex === -1) {
+    const firstHeader = lines.findIndex((l) =>
+      /^(TEMPO|PENALITÀ|PENALITA|MIGLIOR\s+GIRO)$/i.test(l)
     )
 
-    if (idxTwo !== -1) {
-      const beforeTempo = lines.slice(idxTwo + 1, idxTempo)
+    const limit = firstHeader !== -1 ? firstHeader : lines.length
 
-      const carCount = beforeTempo.filter((line) =>
-        looksLikeKnownCarToken(line)
-      ).length
+    for (const candidate of [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]) {
+      const idx = lines.findIndex(
+        (l, i) => i < limit && l === String(candidate)
+      )
 
-      if (carCount >= 2 && carCount <= 8) {
-        startIndex = idxTwo
-        startNum = 1
+      if (idx !== -1) {
+        startIndex = idx
+        startNum = candidate <= 8 ? 1 : 9
+        break
       }
     }
   }
-}
 
-if (startIndex === -1) return []
+  if (startIndex === -1) return []
 
-  const isGara11X2019 =
-  /\bgara\s*11\b/i.test(rawText) &&
-  /Red Bull X2019 Competition/i.test(rawText)
+    const positions: number[] = []
+  let cursor = startIndex
+  let expected = startNum
+  let lastPositionIndex = -1
 
-const positions: number[] = []
-let cursor = startIndex
-let expected = startNum
-
-  while (cursor < lines.length) {
-    if (
-  lines[cursor] === String(expected) ||
-  (
-    isGara11X2019 &&
-    /^\d+$/.test(lines[cursor]) &&
-    Number(lines[cursor]) > expected &&
-    Number(lines[cursor]) <= (startNum === 1 ? 8 : 16)
+  const positionHeaderIndex = lines.findIndex(
+    (l, i) =>
+      i >= startIndex &&
+      /^(TEMPO|PENALITÀ|PENALITA|MIGLIOR\s+GIRO)$/i.test(l)
   )
-) {
-  // PRT Gara 11 ELITE: ricostruzione della posizione 1
-// quando il primo numero OCR è 2.
-if (
-  eliteMissingFirstPos &&
-  positions.length === 0 &&
-  expected === 1 &&
-  lines[cursor] === "2"
-) {
-  positions.push(1)
-  expected = 2
-}    
-if (
-  isGara11X2019 &&
-  !eliteMissingFirstPos &&
-  positions.length === 0 &&
-  expected === 1 &&
-  lines[cursor] === "2"
-) {
-  positions.push(1)
-  expected = 2
-}  
-const detectedPos = Number(lines[cursor])
 
-if (isGara11X2019 && detectedPos > expected) {
-  while (expected < detectedPos) {
-    positions.push(expected)
-    expected++
-  }
-}
+  const positionLimit =
+    positionHeaderIndex !== -1 ? positionHeaderIndex : lines.length
 
-positions.push(expected)
-expected++
-cursor++
-      if (positions.length >= 16) break
-      continue
+  while (cursor < positionLimit && expected <= 16) {
+    const value = Number(lines[cursor])
+
+        if (
+      /^\d{1,2}$/.test(lines[cursor]) &&
+      value >= expected &&
+      value <= 16
+    ) {
+      for (let missing = expected; missing <= value; missing++) {
+        positions.push(missing)
+      }
+
+      expected = value + 1
+      lastPositionIndex = cursor
+    } else if (
+      positions.length > 0 &&
+      /[A-Za-z]/.test(lines[cursor]) &&
+      !/^\d+$/.test(lines[cursor])
+    ) {
+      // Il blocco numerico è terminato:
+      // da qui iniziano i dati dei piloti.
+      break
     }
-    if (/TEMPO|PENALIT|MIGLIOR\s+GIRO/i.test(lines[cursor])) break
 
-// Gara 11 X2019: terminato il blocco numerico,
-// non cercare altre posizioni tra i nomi dei piloti.
-if (
-  isGara11X2019 &&
-  positions.length > 0 &&
-  /[A-Za-z_]/.test(lines[cursor])
-) {
-  break
-}
+    cursor++
+  }
 
-cursor++
-    if (positions.length > 0 && cursor - startIndex > 80) break
-  }
-  // PRT Gara 11 ELITE: completa le otto posizioni
-// del primo screenshot quando l'OCR omette gli ultimi numeri.
-if (
-  eliteMissingFirstPos &&
-  startNum === 1 &&
-  positions.length > 0 &&
-  positions.length < 8
-) {
-  while (positions.length < 8) {
-    positions.push(positions.length + 1)
-  }
-}
   if (!positions.length) return []
 
-  const lastPos = positions[positions.length - 1]
-const lastPosIdx = lines.findIndex(
-  (l, i) => i >= startIndex && l === String(lastPos)
-)
+  cursor =
+    lastPositionIndex !== -1
+      ? lastPositionIndex + 1
+      : startIndex
 
-if (!eliteMissingFirstPos) {
-  if (lastPosIdx !== -1) {
-    cursor = lastPosIdx + 1
-  }
-  // Se l'ultima posizione è stata ricostruita ma
-  // non compare nel RAW, conserviamo il cursore
-  // già avanzato fino all'inizio dei nomi.
-}
-
-const n = positions.length
+  const n = positions.length
 
   const idxTempo = lines.findIndex((l) => /^TEMPO$/i.test(l) || /TEMPO/i.test(l))
   const idxPen = lines.findIndex((l) => /PENALIT/i.test(l))
@@ -1127,7 +956,7 @@ const n = positions.length
   const looksLikeModel = (s: string) => {
     const t = normalizeCarLoose(s)
     return (
-      t.includes("red bull x2019") ||
+            t.includes("red bull x2019") ||
       t.includes("f3500-b") ||
       /\b(gt3|rsr|lms|evo)\b/i.test(t) ||
       /\br8\b/i.test(t) ||
@@ -1170,13 +999,13 @@ t.includes("racing concept") ||
   }
 
     const hasId = (s: string) =>
+          /Red Bull X2019/i.test(s) ||
     /\(\d{3}\)/.test(s) ||
     /'\d{2}\b/.test(s) ||
     /\b\d{2}\b/.test(s) ||
     /\bGT3\b/i.test(s) ||
     /\bGr\.?4\b/i.test(s) ||
     /\bGr\.?B\b/i.test(s) ||
-    /Red Bull X2019/i.test(s) ||
       /F3500-B/i.test(s) ||
     /Rally\s+Car/i.test(s)
 
@@ -1185,8 +1014,8 @@ t.includes("racing concept") ||
   const looksLikeCarStart = (tok: string) => {
     const t = normalizeCarLoose(tok)
     return (
-  t.includes("red bull x2019") ||
-  t.includes("f3500-b") ||
+            t.includes("red bull x2019") ||
+      t.includes("f3500-b") ||
       t === "911" ||
       t === "r8" ||
       /^911\b/.test(t) ||
@@ -1264,16 +1093,7 @@ t.includes("racing concept") ||
     const m = s.match(/^(\d:\d{2}\.\d{3}|--:--\.\-\-)/)
     return (m?.[1] ?? s).trim()
   })
-  const best = bestRaw.map((s) => {
-  if (s.startsWith("--")) return ""
-
-  const corrected =
-    isGara11Elite
-      ? s.replace(/^(\d{1,2}:\d{2}):(\d{3})$/, "$1.$2")
-      : s
-
-  return normalizeTimeText(corrected)
-})
+  const best = bestRaw.map((s) => (s.startsWith("--") ? "" : normalizeTimeText(s)))
 
   const out: RaceRow[] = []
 
@@ -1970,30 +1790,6 @@ export async function POST(req: NextRequest) {
             for (const r of partAlt) {
               mergeQualiRowSafe(qualiRowsMerged, r)
             }
-
-            // PRT Gara 11 X2019: recupero tempi completi
-// dalla lettura alternativa delle posizioni 9-11.
-if (
-  /\bgara\s*11\b/i.test(textAlt) &&
-  /Red Bull X2019 Competition/i.test(textAlt) &&
-  partAlt.length === 3 &&
-  partAlt.every((r) =>
-    r.pos >= 9 &&
-    r.pos <= 11 &&
-    /^\d{1,2}:\d{2}\.\d{3}$/.test(r.tempo)
-  )
-) {
-  for (const r of partAlt) {
-    const existing = qualiRowsMerged.get(r.pos)
-
-    if (existing) {
-      qualiRowsMerged.set(r.pos, {
-        ...existing,
-        tempo: r.tempo,
-      })
-    }
-  }
-}
 
             debugChunks.push(`FILE #${idx + 1} QUALI ALT UNKNOWN — ${f.name}\n\n${textAlt}`)
           }
