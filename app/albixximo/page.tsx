@@ -11122,6 +11122,33 @@ for (const [rawAliasKey, officialName] of Object.entries(aliasMapForLeague)) {
   })
 }
 
+// FIX MIRATO — GARA 11 MASTER — KARL_55_
+if (
+  String(nextUnionMeta.gara).trim() === "11" &&
+  effectiveImportLeague === "MASTER"
+) {
+  const qualiKarl = extractedQualiRows.find(
+    (q: QualiRow) =>
+      q.pos === 2 &&
+      normalizeDriverLookupName(q.pilota).replace(/[^a-z0-9]/g, "") === "karl55"
+  )
+
+  if (qualiKarl) {
+    rowsWithAliases = rowsWithAliases.map((row: ExtractRow) => {
+      const pilotKey = normalizeDriverLookupName(row.pilota)
+        .replace(/[^a-z0-9]/g, "")
+
+      if (pilotKey !== "karl55") return row
+
+      return {
+        ...row,
+        tempoQualifica: qualiKarl.tempo,
+        pole: "",
+      }
+    })
+  }
+}
+
 setRows(rowsWithAliases)
 setQualiRows(extractedQualiRows)
 
