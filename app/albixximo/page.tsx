@@ -788,22 +788,24 @@ function applyQualiRaceAliasToRows(
   toRaceName: string
 ): ExtractRow[] {
   const quali = qualiRows.find(
-    (q) => normalizeDriverLookupName(q.pilota) === normalizeDriverLookupName(fromQualiName)
+    (q) =>
+      normalizeDriverLookupName(q.pilota) ===
+      normalizeDriverLookupName(fromQualiName)
   )
 
   if (!quali) return rows
 
   return rows.map((row) => {
     const isTargetRacePilot =
-      normalizeDriverLookupName(row.pilota) === normalizeDriverLookupName(toRaceName)
+      normalizeDriverLookupName(row.pilota) ===
+      normalizeDriverLookupName(toRaceName)
 
-    const isOldPole =
-      (row.pole || "").trim().toUpperCase() === "POLE"
+    if (!isTargetRacePilot) return row
 
     return {
       ...row,
-      tempoQualifica: isTargetRacePilot ? quali.tempo : row.tempoQualifica,
-      pole: isTargetRacePilot ? "POLE" : isOldPole ? "" : row.pole,
+      tempoQualifica: quali.tempo || row.tempoQualifica,
+      pole: quali.pos === 1 ? "POLE" : "",
     }
   })
 }
@@ -11091,8 +11093,12 @@ const aliasMapForLeague =
 for (const [rawAliasKey, officialName] of Object.entries(aliasMapForLeague)) {
   const official = String(officialName)
 
+    const officialKey = normalizeDriverLookupName(official)
+
   const quali = extractedQualiRows.find(
-    (q: QualiRow) => normalizeDriverLookupName(q.pilota) === rawAliasKey
+    (q: QualiRow) =>
+      normalizeDriverLookupName(q.pilota) === rawAliasKey ||
+      normalizeDriverLookupName(q.pilota) === officialKey
   )
 
   if (quali) {

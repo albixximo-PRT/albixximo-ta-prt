@@ -722,16 +722,17 @@ function parseQualificaFromColumnText(rawText: string): QualiRow[] {
     while (distacchi.length < count) distacchi.push("")
   }
 
-  const out: QualiRow[] = []
+    const out: QualiRow[] = []
   for (let i = 0; i < count; i++) {
     const pos = positions[i]
     if (!pos || Number.isNaN(pos)) continue
+
     out.push({
       pos,
       pilota: names[i] ?? "",
       auto: normalizeKnownCar(cars[i] ?? ""),
       tempo: times[i] ?? "",
-      distacco: distacchi[i] ?? "",
+      distacco: pos === 1 ? "" : (distacchi[i] ?? ""),
     })
   }
   return out
