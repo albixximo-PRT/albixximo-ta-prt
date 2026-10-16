@@ -588,16 +588,44 @@ function parseQualificaFromColumnText(rawText: string): QualiRow[] {
     .filter((l) => !/^AVANTI$/i.test(l))
     .filter((l) => !/^ALTERNA/i.test(l))
 
-  const findPosBlock = () => {
+    const findPosBlock = () => {
     const candidates = [1, 9]
+
     for (const startNum of candidates) {
       for (let i = 0; i < lines.length; i++) {
         if (lines[i] !== String(startNum)) continue
-        let count = 0
-        while (count < 8 && lines[i + count] === String(startNum + count)) count++
-        if (count >= 2) return { start: i, end: i + count, startNum, count }
+
+        let cursor = i
+        let expected = startNum
+        let lastPositionIndex = i - 1
+        let recognized = 0
+
+        while (cursor < lines.length && expected <= 16) {
+          const line = lines[cursor]
+
+          if (!/^\d{1,2}$/.test(line)) break
+
+          const value = Number(line)
+
+          if (value < expected || value > 16) break
+
+          recognized++
+          expected = value + 1
+          lastPositionIndex = cursor
+          cursor++
+        }
+
+        if (recognized >= 2) {
+          return {
+            start: i,
+            end: lastPositionIndex + 1,
+            startNum,
+            count: expected - startNum,
+          }
+        }
       }
     }
+
     return null
   }
 
@@ -605,7 +633,12 @@ function parseQualificaFromColumnText(rawText: string): QualiRow[] {
   if (!posBlock) return []
 
   const count = posBlock.count
-  const positions = lines.slice(posBlock.start, posBlock.end).map((x) => Number(x))
+
+  const positions = Array.from(
+    { length: count },
+    (_, i) => posBlock.startNum + i
+  )
+
   let cursor = posBlock.end
 
   const isName = (s: string) => {
