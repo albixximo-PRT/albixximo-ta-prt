@@ -765,6 +765,7 @@ function normalizeLeagueKey(value: string): ChampionshipLeagueKey | null {
 const DRIVER_ENTRY_RACE: Record<string, number> = {
   krasam23: 7,
   step87: 8,
+  volpeindovina: 11,
 }
 
 function getDriverEntryRace(driverName: string) {
