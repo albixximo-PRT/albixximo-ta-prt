@@ -707,7 +707,11 @@ function parseQualificaFromColumnText(rawText: string): QualiRow[] {
   }
 
   let distacchi: string[] = Array(count).fill("")
-  const hasLeaderMarker = gapsRaw.some((g) => g.startsWith("--"))
+    const hasLeaderMarker =
+    lines
+      .slice(idxDistacco + 1)
+      .some((line) => /^[-–—.\s]+$/.test(line.trim())) ||
+    gapsRaw.some((g) => g.startsWith("--"))
   if (hasLeaderMarker) {
     const onlyPlus = gapsRaw.filter((g) => g.startsWith("+")).slice(0, Math.max(0, count - 1))
     distacchi = [""].concat(onlyPlus)
