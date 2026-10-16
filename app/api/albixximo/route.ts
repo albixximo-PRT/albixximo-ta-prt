@@ -1442,8 +1442,9 @@ function extractUnionMetaFromText(text: string): Partial<UnionMeta> {
   let lobby = ""
   let lega = ""
 
-  const garaMatch =
+    const garaMatch =
     upper.match(/\bGARA\s*([1-9]\d?)\b/) ||
+    upper.match(/\bSEASON\s*([1-9]\d?)\b/) ||
     upper.match(/\bR(?:OUND)?\s*([1-9]\d?)\b/)
   if (garaMatch) gara = garaMatch[1]
 
@@ -1473,10 +1474,18 @@ function extractUnionMetaFromText(text: string): Partial<UnionMeta> {
     "AMA",
   ]
 
-  for (const c of legaCandidates) {
-    if (upper.includes(c)) {
-      lega = normalizeUnionLeague(c)
-      break
+    const explicitLeague = upper.match(
+    /\bLEGA\s+(PRO[\s_-]?(?:GOLD|SILVER|AMA)|PLATINUM|MASTER|STAR|ELITE|PRO|GT|AMA)\b/
+  )
+
+  if (explicitLeague) {
+    lega = normalizeUnionLeague(explicitLeague[1])
+  } else {
+    for (const c of legaCandidates) {
+      if (new RegExp(`\\b${c.replace(/[-_]/g, "[-_ ]")}\\b`, "i").test(upper)) {
+        lega = normalizeUnionLeague(c)
+        break
+      }
     }
   }
 
