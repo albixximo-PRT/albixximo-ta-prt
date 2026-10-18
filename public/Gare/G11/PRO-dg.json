@@ -1,0 +1,38 @@
+[
+  {
+    "pilot": "Step87",
+    "code": "P21",
+    "lap": "01",
+    "timing": "00:26",
+    "reason": "Guida scorretta generica",
+    "sanction": "Ammonizione",
+    "type": "ammonition"
+  },
+  {
+    "pilot": "kraSam23",
+    "code": "P03",
+    "lap": "01",
+    "timing": "00:48",
+    "reason": "Contatto con perdita di posizioni (3-4)",
+    "sanction": "+10 secondi",
+    "type": "time"
+  },
+  {
+    "pilot": "kraSam23",
+    "code": "P08",
+    "lap": "01",
+    "timing": "00:48",
+    "reason": "In aggiunta da P01 a P07 con danni ridotti",
+    "sanction": "+5 secondi",
+    "type": "time"
+  },
+  {
+    "pilot": "kraSam23",
+    "code": "P10",
+    "lap": "01",
+    "timing": "00:48",
+    "reason": "In aggiunta da P01 a P07 non restituendo posizione",
+    "sanction": "+15 secondi",
+    "type": "time"
+  }
+]
