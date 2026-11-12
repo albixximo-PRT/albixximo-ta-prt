@@ -47,10 +47,11 @@ type SavedLeagueSnapshot = {
   dnfOverrides: DnfOverrideMap
   manualGaraOverride: string
   manualLegaOverride: string
-  manualPilotOverrides: Record<number, string>
+    manualPilotOverrides: Record<number, string>
   manualAutoOverrides: Record<number, string>
   manualDistaccoOverrides: Record<number, string>
   manualQualiOverrides: Record<number, string>
+  manualBestLapOverrides?: Record<number, string>
   bestQuali: string
   bestRaceLap: string
   winner: string
@@ -3750,6 +3751,10 @@ const [manualDistaccoDraft, setManualDistaccoDraft] = useState<Record<number, st
 const [showQualiModal, setShowQualiModal] = useState(false)
 const [manualQualiOverrides, setManualQualiOverrides] = useState<Record<number, string>>({})
 const [manualQualiDraft, setManualQualiDraft] = useState<Record<number, string>>({})
+
+const [showBestLapModal, setShowBestLapModal] = useState(false)
+const [manualBestLapOverrides, setManualBestLapOverrides] = useState<Record<number, string>>({})
+const [manualBestLapDraft, setManualBestLapDraft] = useState<Record<number, string>>({})
 const [showMovementCreatedModal, setShowMovementCreatedModal] = useState(false)
 const [showApplyMovementsModal, setShowApplyMovementsModal] = useState(false)
 const [showRemoveDsqDriversModal, setShowRemoveDsqDriversModal] = useState(false)
@@ -6441,7 +6446,9 @@ return {
 
   distaccoDalPrimo: (manualDistaccoValue || r.distaccoDalPrimo || "").trim(),
 
-  migliorGiroGara: isSpecialGara7Platinum ? "" : r.migliorGiroGara,
+  migliorGiroGara: isSpecialGara7Platinum
+  ? ""
+  : (manualBestLapOverrides[r.sourcePosGara] ?? r.migliorGiroGara),
 
   tempoQualifica: (() => {
   const value = (
@@ -6517,6 +6524,7 @@ return {
   manualAutoOverrides,
   manualDistaccoOverrides,
   manualQualiOverrides,
+  manualBestLapOverrides,
   manualQualiDraft,
   showQualiModal,
   workbenchDriverLeagueMap,
@@ -11033,15 +11041,18 @@ async function run(targetLeague?: ChampionshipLeagueKey) {
   setLapOverrides({})
   setDnfOverrides({})
 
-  setManualPilotOverrides({})
+    setManualPilotOverrides({})
   setManualAutoOverrides({})
   setManualDistaccoOverrides({})
   setManualQualiOverrides({})
+  setManualBestLapOverrides({})
 
   setManualPilotDraft({})
   setManualAutoDraft({})
   setManualDistaccoDraft({})
   setManualQualiDraft({})
+  setManualBestLapDraft({})
+  setShowBestLapModal(false)
 
   setShowPilotModal(false)
   setShowAutoModal(false)
@@ -11197,15 +11208,23 @@ setQualiRows(extractedQualiRows)
   setShowExportModal(false)
   setManualGaraOverride("")
   setManualLegaOverride(keepSelectedLeague ? selectedLeague : "")
-  setManualPilotOverrides({})
+    setManualPilotOverrides({})
   setManualAutoOverrides({})
   setManualDistaccoOverrides({})
+  setManualQualiOverrides({})
+  setManualBestLapOverrides({})
+
   setManualPilotDraft({})
   setManualAutoDraft({})
   setManualDistaccoDraft({})
+  setManualQualiDraft({})
+  setManualBestLapDraft({})
+
   setShowPilotModal(false)
   setShowAutoModal(false)
   setShowDistaccoModal(false)
+  setShowQualiModal(false)
+  setShowBestLapModal(false)
   setShowConfirmSaveLeagueModal(false)
   setShowSaveLeagueSuccessModal(false)
   setShowConfirmResetRaceModal(false)
@@ -11784,8 +11803,9 @@ function confirmSaveCurrentLeague() {
     manualLegaOverride,
     manualPilotOverrides,
     manualAutoOverrides,
-    manualDistaccoOverrides,
+        manualDistaccoOverrides,
     manualQualiOverrides,
+    manualBestLapOverrides,
     bestQuali,
     bestRaceLap,
     winner,
@@ -11856,10 +11876,11 @@ function reopenSavedLeague(league: ChampionshipLeagueKey) {
   setLapOverrides(snapshot.lapOverrides || {})
   setDnfOverrides(snapshot.dnfOverrides || {})
 
-  setManualPilotOverrides(snapshot.manualPilotOverrides || {})
+    setManualPilotOverrides(snapshot.manualPilotOverrides || {})
   setManualAutoOverrides(snapshot.manualAutoOverrides || {})
   setManualDistaccoOverrides(snapshot.manualDistaccoOverrides || {})
   setManualQualiOverrides(snapshot.manualQualiOverrides || {})
+  setManualBestLapOverrides(snapshot.manualBestLapOverrides || {})
 
   setManualPilotDraft({})
   setManualAutoDraft({})
@@ -12062,6 +12083,46 @@ function applyAutoCorrections() {
   setShowAutoModal(false)
 }
 
+
+function openBestLapCorrectionModal() {
+  const nextDraft: Record<number, string> = {}
+
+  for (const row of displayRows) {
+    nextDraft[row.sourcePosGara] = String(row.migliorGiroGara ?? "").trim()
+  }
+
+  setManualBestLapDraft(nextDraft)
+  setShowBestLapModal(true)
+}
+
+function applyBestLapCorrections() {
+  const cleaned: Record<number, string> = {}
+
+  for (const row of previewRows) {
+    const value = String(manualBestLapDraft[row.sourcePosGara] ?? "").trim()
+    const original = String(row.migliorGiroGara ?? "").trim()
+
+    if (value && parseMmSsMmm(value) == null) {
+      alert(`Tempo non valido per ${row.pilota}: ${value}. Usa M:SS.mmm`)
+      return
+    }
+
+    if (value !== original) {
+      cleaned[row.sourcePosGara] = value
+    }
+  }
+
+  setManualBestLapOverrides(cleaned)
+  setShowBestLapModal(false)
+}
+
+function resetBestLapCorrections() {
+  setManualBestLapOverrides({})
+  setManualBestLapDraft({})
+  setShowBestLapModal(false)
+}
+
+
 function openQualiCorrectionModal() {
   const nextDraft: Record<number, string> = {}
   for (const row of displayRows) {
@@ -12143,9 +12204,13 @@ function resetAllManualCorrections() {
   setManualDistaccoDraft({})
   setShowDistaccoModal(false)
 
-  setManualQualiOverrides({})
-setManualQualiDraft({})
-setShowQualiModal(false)
+    setManualQualiOverrides({})
+  setManualQualiDraft({})
+  setShowQualiModal(false)
+
+  setManualBestLapOverrides({})
+  setManualBestLapDraft({})
+  setShowBestLapModal(false)
 }
 
   const showMeta = prtMode || unionMode
@@ -13232,7 +13297,24 @@ const lastCreatedMovementText = useMemo(() => {
     fontSize: 12,
   }}
 >
-  Modifica Qualifiche
+    Modifica Qualifiche
+</button>
+
+<button
+  onClick={openBestLapCorrectionModal}
+  style={{
+    padding: "10px 12px",
+    borderRadius: 10,
+    border: "1px solid rgba(255,255,255,0.16)",
+    background: "rgba(255,255,255,0.08)",
+    color: "white",
+    cursor: "pointer",
+    fontWeight: 800,
+    textTransform: "uppercase",
+    fontSize: 12,
+  }}
+>
+  Modifica Giro Veloce
 </button>
 
     <button
@@ -16422,6 +16504,106 @@ const lastCreatedMovementText = useMemo(() => {
     </div>
   </div>
 )}
+
+
+{showBestLapModal && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,0.72)",
+      backdropFilter: "blur(6px)",
+      display: "grid",
+      placeItems: "center",
+      zIndex: 9999,
+      padding: 20,
+    }}
+  >
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 900,
+        maxHeight: "90vh",
+        overflow: "auto",
+        borderRadius: 22,
+        border: "1px solid rgba(255,255,255,0.12)",
+        background: "#12161f",
+        padding: 20,
+        display: "grid",
+        gap: 16,
+      }}
+    >
+      <div>
+        <div style={{ fontSize: 22, fontWeight: 900 }}>
+          Correzione Manuale Migliori Giri
+        </div>
+        <div style={{ fontSize: 13, opacity: 0.75, marginTop: 6 }}>
+          Inserisci i tempi nel formato M:SS.mmm
+        </div>
+      </div>
+
+      <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: "left", padding: 10 }}>Pilota</th>
+              <th style={{ textAlign: "left", padding: 10 }}>Miglior giro</th>
+            </tr>
+          </thead>
+          <tbody>
+            {displayRows.map((row) => (
+              <tr key={row.sourcePosGara}>
+                <td style={{ padding: 10 }}>{row.pilota}</td>
+                <td style={{ padding: 10 }}>
+                  <input
+                    value={manualBestLapDraft[row.sourcePosGara] ?? ""}
+                    onChange={(e) =>
+                      setManualBestLapDraft((prev) => ({
+                        ...prev,
+                        [row.sourcePosGara]: e.target.value,
+                      }))
+                    }
+                    placeholder="1:54.608"
+                    style={{
+                      width: "100%",
+                      maxWidth: 180,
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      background: "rgba(0,0,0,0.3)",
+                      color: "white",
+                      fontFamily: "monospace",
+                    }}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <button onClick={() => setShowBestLapModal(false)}>
+          Chiudi
+        </button>
+        <button onClick={resetBestLapCorrections}>
+          Reset
+        </button>
+        <button onClick={applyBestLapCorrections}>
+          Applica correzioni
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
 {showQualiModal && (
   <div
