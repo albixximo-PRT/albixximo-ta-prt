@@ -439,7 +439,11 @@ const RACE8_PENALTY_DESCRIPTIONS: Record<string, string> = {
   P31: "Raggiunte 3 ammonizioni",
 }
 
-function getPointsForPrtRow(r: ExtractRow, bestRaceLap: string): number {
+function getPointsForPrtRow(
+  r: ExtractRow,
+  bestRaceLap: string,
+  raceNumber?: number
+): number {
   const basePointsMap: Record<number, number> = {
     1: 30,
     2: 27,
@@ -461,7 +465,7 @@ function getPointsForPrtRow(r: ExtractRow, bestRaceLap: string): number {
   const bestLapTime = (bestRaceLap.split("  ").pop() || "").trim()
   const isBestLap = !!bestLapTime && (r.migliorGiroGara || "").trim() === bestLapTime
 
-  let points = basePointsMap[r.posGara] ?? 0
+  let points = (basePointsMap[r.posGara] ?? 0) * (raceNumber === 13 ? 2 : 1)
 
   if (isPole) points += 1
   if (isBestLap) points += 1
@@ -2004,10 +2008,12 @@ function SummaryStrip({
 function renderPrtPointsCell({
   row,
   bestRaceLap,
+  raceNumber,
   exporting = false,
 }: {
   row: DisplayRow
   bestRaceLap: string
+  raceNumber?: number
   exporting?: boolean
 }) {
   const rawTempo = tempoLikeGt7(row).trim().toUpperCase()
@@ -2048,9 +2054,11 @@ function renderPrtPointsCell({
   14: 1,
 }
 
-pointsValue = (dnfBasePointsMap[row.posGara] ?? 0) + bonusPoints
+pointsValue =
+  (dnfBasePointsMap[row.posGara] ?? 0) * (raceNumber === 13 ? 2 : 1) +
+  bonusPoints
   } else {
-    pointsValue = getPointsForPrtRow(row, bestRaceLap)
+    pointsValue = getPointsForPrtRow(row, bestRaceLap, raceNumber)
   }
 
   const isP1 = row.posGara === 1
@@ -3513,10 +3521,11 @@ const rowStyle = getPrtTableRowStyle(
                     style={exporting ? PRT_ROW_STYLES.pointsExport : PRT_ROW_STYLES.pointsLive}
                   >
                     {renderPrtPointsCell({
-                      row: r,
-                      bestRaceLap,
-                      exporting,
-                    })}
+  row: r,
+  bestRaceLap,
+  raceNumber,
+  exporting,
+})}
                   </TableCell>
 
                   {showMeta && (
@@ -4106,7 +4115,10 @@ function roundUpPoints(value: number): number {
   return Math.ceil(value)
 }
 
-function getPrtBasePointsByPosition(pos: number): number {
+function getPrtBasePointsByPosition(
+  pos: number,
+  raceNumber?: number
+): number {
   const basePointsMap: Record<number, number> = {
     1: 30,
     2: 27,
@@ -4124,7 +4136,8 @@ function getPrtBasePointsByPosition(pos: number): number {
     14: 1,
   }
 
-  return basePointsMap[pos] ?? 0
+    const basePoints = basePointsMap[pos] ?? 0
+  return raceNumber === 13 ? basePoints * 2 : basePoints
 }
 
 function normalizeChampionshipCellInput(value: string) {
@@ -4290,7 +4303,8 @@ function buildSavedRaceCell(row: DisplayRow, bestRaceLap: string): ChampionshipR
 
 function buildSnapshotRacePointsMap(
   finalRows: DisplayRow[],
-  bestRaceLap: string
+  bestRaceLap: string,
+  raceNumber?: number
 ): Record<string, number> {
   const pointsMap: Record<string, number> = {}
 
@@ -4328,7 +4342,7 @@ function buildSnapshotRacePointsMap(
     const isBestLap =
       !!bestLapTime && (row.migliorGiroGara || "").trim() === bestLapTime
 
-    let points = getPrtBasePointsByPosition(row.posGara)
+        let points = getPrtBasePointsByPosition(row.posGara, raceNumber)
     if (isPole) points += 1
     if (isBestLap) points += 1
 
@@ -4346,8 +4360,9 @@ function buildSnapshotRacePointsMap(
     const isDnfI = rawTempo === "DNF-I"
 
     let points = getPrtBasePointsByPosition(
-      isDnfI ? row.posGara : nextDnfPosition
-    )
+  isDnfI ? row.posGara : nextDnfPosition,
+  raceNumber
+)
 
     if (isPole) points += 1
     if (isBestLap) points += 1
@@ -7743,7 +7758,8 @@ if (currentRace < entryRace) continue
 
     const snapshotPointsMapRaw = buildSnapshotRacePointsMap(
   snapshot.finalRows,
-  snapshot.bestRaceLap || ""
+  snapshot.bestRaceLap || "",
+  raceNumber
 )
 
 const isSpecialGara7PlatinumPoints =
